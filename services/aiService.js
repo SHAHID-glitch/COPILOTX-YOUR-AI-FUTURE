@@ -74,7 +74,7 @@ class AIService {
         };
     }
 
-    async generateResponse(message, conversationHistory = [], responseType = 'balanced', userId = null, conversationId = null) {
+    async generateResponse(message, conversationHistory = [], responseType = 'balanced', userId = null, conversationId = null, emojiUsage = 'default') {
         try {
             const style = this.responseStyles[responseType] || this.responseStyles.balanced;
             
@@ -120,21 +120,39 @@ class AIService {
                         memoryService = require('./memoryService');
                     }
                     const memoryContext = await memoryService.getPersonalizedContext(userId, conversationId);
-                    personalizedContext = memoryContext.contextText;
+                    personalizedContext = memoryContext.contextText || '';
+                    
+                    // LOG: Debug personalization
+                    if (personalizedContext) {
+                        console.log('📝 Using personalized context:', personalizedContext.substring(0, 100) + '...');
+                    } else {
+                        console.log('🆕 No personalized context - treating as new user');
+                    }
                 } catch (error) {
                     console.warn('Failed to get personalized context:', error.message);
+                    personalizedContext = ''; // Ensure it's empty on error
                 }
             }
             
             // Build enhanced system prompt with memory context and search results
             let enhancedSystemPrompt = style.systemPrompt;
             
+            // Add emoji usage instructions
+            if (emojiUsage === 'more') {
+                enhancedSystemPrompt += '\n\nEMOJI GUIDANCE: Use emojis naturally when they enhance the message. Add relevant emojis to emphasize key points, express emotions, and make conversational exchanges more engaging. Use 3-5 emojis per response when appropriate.';
+            } else if (emojiUsage === 'default') {
+                enhancedSystemPrompt += '\n\nEMOJI GUIDANCE: Use emojis selectively and contextually. Add them when they add clarity, warmth, or emphasis to helpful/positive statements. Avoid emojis in technical explanations or code snippets. Use 1-2 emojis only when natural.';
+            } else if (emojiUsage === 'less') {
+                enhancedSystemPrompt += '\n\nEMOJI GUIDANCE: Use minimal or no emojis. Maintain a professional, clear communication style. Only use emojis if absolutely essential for clarity.';
+            }
+            
             if (searchContext) {
                 enhancedSystemPrompt += `\n\n**Web Search Results:**\n${searchContext}`;
                 enhancedSystemPrompt += '\n\nPlease incorporate the latest information from these search results into your response. Cite the sources when appropriate.';
             }
             
-            if (personalizedContext) {
+            // ONLY add personalized context if it's not empty
+            if (personalizedContext && personalizedContext.trim().length > 0) {
                 enhancedSystemPrompt += `\n\n**User Context:** ${personalizedContext}`;
                 enhancedSystemPrompt += '\n\nUse this context to provide more personalized and relevant responses. Reference past topics when appropriate and anticipate user needs based on their interests.';
             }

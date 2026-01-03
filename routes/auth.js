@@ -497,4 +497,65 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
+// Update profile endpoint (for authenticated users)
+router.put('/update-profile', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        
+        if (!token) {
+            return res.status(401).json({ success: false, error: 'No token provided' });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        const { displayName, username } = req.body;
+
+        // Validate input
+        if (!displayName && !username) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please provide displayName or username to update'
+            });
+        }
+
+        // Find user
+        const user = await User.findById(decoded.userId);
+        
+        if (!user || !user.isActive) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        // Update fields if provided
+        if (displayName) user.displayName = displayName;
+        if (username) {
+            // Check if username is already taken by another user
+            const existingUser = await User.findOne({ 
+                username, 
+                _id: { $ne: user._id } 
+            });
+            
+            if (existingUser) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Username already taken'
+                });
+            }
+            user.username = username;
+        }
+
+        await user.save();
+
+        res.json({
+            success: true,
+            user: user.toPublicJSON()
+        });
+    } catch (error) {
+        console.error('Update profile error:', error);
+        if (error.name === 'JsonWebTokenError') {
+            res.status(401).json({ success: false, error: 'Invalid token' });
+        } else {
+            res.status(500).json({ success: false, error: 'Failed to update profile. Please try again.' });
+        }
+    }
+});
+
 module.exports = router;

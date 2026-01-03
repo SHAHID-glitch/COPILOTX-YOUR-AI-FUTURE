@@ -344,7 +344,7 @@ router.post('/conversations/:id/generate-title', auth, async (req, res) => {
 // Used for modes like Imagine, Labs, Library where responses shouldn't be saved to sidebar
 router.post('/generate', async (req, res) => {
     try {
-        const { message, history, responseType } = req.body;
+        const { message, history, responseType, emojiUsage } = req.body;
         
         if (!message) {
             return res.status(400).json({
@@ -364,7 +364,9 @@ router.post('/generate', async (req, res) => {
             message, 
             history || [], 
             responseType || 'balanced',
-            userId
+            userId,
+            null,
+            emojiUsage || 'default'
         );
 
         res.json({
@@ -681,35 +683,26 @@ router.post('/text-to-speech', optionalAuth, async (req, res) => {
         const selectedVoice = voiceMap[voice] || voiceMap['default'];
 
         // Determine edge-tts path
-        const edgeTtsPath = path.join(__dirname, '..', '.venv', 'Scripts', 'edge-tts.exe');
         const pythonPath = path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe');
         
         console.log('🔍 Checking TTS paths...');
-        console.log('edge-tts path:', edgeTtsPath);
         console.log('python path:', pythonPath);
 
-        // Check if edge-tts is available
-        let usePython = false;
-        if (!fs.existsSync(edgeTtsPath)) {
-            console.log('⚠️  edge-tts.exe not found, will use python -m edge_tts');
-            if (!fs.existsSync(pythonPath)) {
-                console.error('❌ Neither edge-tts.exe nor python found');
-                return res.status(500).json({ 
-                    error: 'Edge-TTS not installed or accessible',
-                    message: 'Please install Edge-TTS: pip install edge-tts',
-                    instructions: 'Run: pip install edge-tts in your virtual environment'
-                });
-            }
-            usePython = true;
+        // Check if Python is available
+        if (!fs.existsSync(pythonPath)) {
+            console.error('❌ Python not found in virtual environment');
+            return res.status(500).json({ 
+                error: 'Python environment not found',
+                message: 'Please ensure the Python virtual environment is set up correctly',
+                instructions: 'Make sure .venv/Scripts/python.exe exists and edge-tts is installed: pip install edge-tts'
+            });
         }
 
-        // Generate audio using Edge TTS
-        let ttsCommand;
-        if (usePython) {
-            ttsCommand = `"${pythonPath}" -m edge_tts --text "${escapedText}" --write-media "${outputPath}" --voice "${selectedVoice}"`;
-        } else {
-            ttsCommand = `"${edgeTtsPath}" --text "${escapedText}" --write-media "${outputPath}" --voice "${selectedVoice}"`;
-        }
+        // Always use python -m edge_tts (more reliable than .exe launcher)
+        console.log('✅ Using python -m edge_tts for TTS generation');
+
+        // Generate audio using Edge TTS (always use Python module for reliability)
+        const ttsCommand = `"${pythonPath}" -m edge_tts --text "${escapedText}" --write-media "${outputPath}" --voice "${selectedVoice}"`;
         
         console.log('🔄 Running TTS command...');
         console.log('Command:', ttsCommand.substring(0, 100) + '...');

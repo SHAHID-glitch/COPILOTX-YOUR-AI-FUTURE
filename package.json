@@ -8,6 +8,8 @@
     "dev": "nodemon server.js",
     "copilot": "node start-copilot.js",
     "open-copilot": "node start-copilot.js",
+    "build:css": "node build-css.js",
+    "build:css:watch": "nodemon --watch style-tailwind.css --watch tailwind.config.js --exec node build-css.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -54,6 +56,11 @@
     "tesseract.js": "^4.1.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "@tailwindcss/forms": "^0.5.11",
+    "@tailwindcss/postcss": "^4.1.18",
+    "autoprefixer": "^10.4.23",
+    "nodemon": "^3.0.2",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18"
   }
 }

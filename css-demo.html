@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced CSS Showcase - Modern UI Components</title>
+    <link rel="stylesheet" href="style-enhanced.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .section {
+            background: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+        
+        .section h2 {
+            margin-bottom: 1.5rem;
+            color: #333;
+            font-size: 1.75rem;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .component-demo {
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 0.75rem;
+        }
+        
+        .component-demo h3 {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header style="text-align: center; margin-bottom: 3rem;">
+            <h1 class="text-gradient-rainbow" style="font-size: 3rem; margin-bottom: 0.5rem;">
+                🎨 Enhanced CSS Showcase
+            </h1>
+            <p style="color: white; font-size: 1.25rem;">Modern UI Components & Utilities</p>
+        </header>
+
+        <!-- Buttons Section -->
+        <section class="section">
+            <h2>🔘 Modern Button Variants</h2>
+            <div class="demo-grid">
+                <div class="component-demo">
+                    <h3>Gradient Primary</h3>
+                    <button class="btn-modern btn-gradient-primary">
+                        Click Me
+                    </button>
+                </div>
+                <div class="component-demo">
+                    <h3>Rainbow Gradient</h3>
+                    <button class="btn-modern btn-gradient-rainbow">
+                        Rainbow Button
+                    </button>
+                </div>
+                <div class="component-demo">
+                    <h3>Neon Effect</h3>
+                    <button class="btn-modern btn-neon">
+                        Neon Glow
+                    </button>
+                </div>
+                <div class="component-demo">
+                    <h3>Glass Effect</h3>
+                    <button class="btn-modern btn-glass">
+                        Glassmorphism
+                    </button>
+                </div>
+                <div class="component-demo">
+                    <h3>Neumorphic</h3>
+                    <button class="btn-modern btn-neumorphic">
+                        Soft UI
+                    </button>
+                </div>
+                <div class="component-demo">
+                    <h3>Brutal Design</h3>
+                    <button class="btn-modern btn-brutal">
+                        Brutalism
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards Section -->
+        <section class="section">
+            <h2>🎴 Advanced Card Designs</h2>
+            <div class="grid grid-cols-3 gap-6">
+                <div class="card-modern card-hover-lift">
+                    <h3>Modern Card</h3>
+                    <p>Hover for smooth lift effect with modern shadow.</p>
+                    <span class="badge-modern badge-gradient">Featured</span>
+                </div>
+                
+                <div class="card-glass" style="background: rgba(255,255,255,0.15);">
+                    <h3 style="color: white;">Glass Card</h3>
+                    <p style="color: rgba(255,255,255,0.9);">Glassmorphism design with backdrop blur.</p>
+                    <span class="badge-modern badge-glow">Premium</span>
+                </div>
+                
+                <div class="card-gradient">
+                    <h3>Gradient Card</h3>
+                    <p>Animated rainbow gradient with border glow.</p>
+                    <span class="badge-modern badge-pulse" style="background: white; color: #667eea;">Trending</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Animations -->
+        <section class="section">
+            <h2>⏳ Loading Animations</h2>
+            <div class="demo-grid">
+                <div class="component-demo flex flex-col items-center">
+                    <h3>Spinner</h3>
+                    <div class="loader-spinner"></div>
+                </div>
+                <div class="component-demo flex flex-col items-center">
+                    <h3>Dots</h3>
+                    <div class="loader-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <div class="component-demo flex flex-col items-center">
+                    <h3>Pulse</h3>
+                    <div class="loader-pulse"></div>
+                </div>
+                <div class="component-demo flex flex-col items-center">
+                    <h3>Bars</h3>
+                    <div class="loader-bars">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Progress Bars -->
+        <section class="section">
+            <h2>📊 Progress Bars</h2>
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <div>
+                    <h3 style="margin-bottom: 0.5rem;">Modern Progress</h3>
+                    <div class="progress-modern">
+                        <div class="progress-bar-modern" style="width: 75%;"></div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 0.5rem;">Striped Progress</h3>
+                    <div class="progress-modern">
+                        <div class="progress-bar-modern progress-striped" style="width: 60%;"></div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 0.5rem;">Glowing Progress</h3>
+                    <div class="progress-modern">
+                        <div class="progress-bar-modern progress-glow" style="width: 85%;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Badges -->
+        <section class="section">
+            <h2>🏷️ Badge Variants</h2>
+            <div class="flex flex-wrap gap-3">
+                <span class="badge-modern badge-gradient">Gradient</span>
+                <span class="badge-modern badge-outline">Outline</span>
+                <span class="badge-modern badge-glow">Glow</span>
+                <span class="badge-modern badge-pulse">Pulsing</span>
+                <span class="badge-modern" style="background: #10b981; color: white;">Success</span>
+                <span class="badge-modern" style="background: #ef4444; color: white;">Error</span>
+                <span class="badge-modern" style="background: #f59e0b; color: white;">Warning</span>
+            </div>
+        </section>
+
+        <!-- Text Effects -->
+        <section class="section">
+            <h2>✨ Text Effects</h2>
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <h1 class="text-gradient-primary">Gradient Text Primary</h1>
+                <h1 class="text-gradient-rainbow">Rainbow Gradient Text</h1>
+                <h1 class="text-glow">Glowing Text Effect</h1>
+            </div>
+        </section>
+
+        <!-- Hover Effects -->
+        <section class="section">
+            <h2>🖱️ Hover Effects</h2>
+            <div class="demo-grid">
+                <div class="component-demo">
+                    <div class="card-modern hover-grow" style="padding: 2rem; text-align: center; cursor: pointer;">
+                        <h3>Grow</h3>
+                    </div>
+                </div>
+                <div class="component-demo">
+                    <div class="card-modern hover-rotate" style="padding: 2rem; text-align: center; cursor: pointer;">
+                        <h3>Rotate</h3>
+                    </div>
+                </div>
+                <div class="component-demo">
+                    <div class="card-modern hover-float" style="padding: 2rem; text-align: center; cursor: pointer;">
+                        <h3>Float</h3>
+                    </div>
+                </div>
+                <div class="component-demo">
+                    <div class="card-modern hover-glow" style="padding: 2rem; text-align: center; cursor: pointer;">
+                        <h3>Glow</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Inputs -->
+        <section class="section">
+            <h2>📝 Modern Inputs</h2>
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Modern Input</label>
+                    <input type="text" class="input-modern" placeholder="Enter text...">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Glow Input</label>
+                    <input type="text" class="input-glow" placeholder="Glowing input...">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Input Group</label>
+                    <div class="input-group-modern">
+                        <div class="input-group-icon">🔍</div>
+                        <input type="text" placeholder="Search...">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skeleton Loaders -->
+        <section class="section">
+            <h2>💀 Skeleton Loaders</h2>
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="skeleton skeleton-avatar"></div>
+                    <div style="flex: 1;">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text"></div>
+                    </div>
+                </div>
+                <div class="skeleton skeleton-card"></div>
+            </div>
+        </section>
+
+        <!-- Animations -->
+        <section class="section">
+            <h2>🎬 Animation Classes</h2>
+            <div class="demo-grid">
+                <div class="component-demo">
+                    <div class="card-modern animate-fade-in" style="padding: 1.5rem; text-align: center;">
+                        Fade In
+                    </div>
+                </div>
+                <div class="component-demo">
+                    <div class="card-modern animate-slide-up delay-100" style="padding: 1.5rem; text-align: center;">
+                        Slide Up
+                    </div>
+                </div>
+                <div class="component-demo">
+                    <div class="card-modern animate-scale-in delay-200" style="padding: 1.5rem; text-align: center;">
+                        Scale In
+                    </div>
+                </div>
+                <div class="component-demo">
+                    <button class="btn-modern btn-gradient-primary animate-pulse">
+                        Pulsing
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Toast Notification Demo -->
+        <div class="toast toast-success" style="position: relative; bottom: auto; right: auto; margin: 2rem auto; max-width: 500px;">
+            <div class="toast-icon">✓</div>
+            <div class="toast-content">
+                <div class="toast-title">Success!</div>
+                <div class="toast-message">Your changes have been saved successfully.</div>
+            </div>
+            <button class="toast-close">×</button>
+        </div>
+    </div>
+
+    <script>
+        // Add some interactivity
+        document.querySelectorAll('.btn-modern').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+    </script>
+</body>
+</html>

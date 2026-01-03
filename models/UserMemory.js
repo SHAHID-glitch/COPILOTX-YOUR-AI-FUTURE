@@ -251,6 +251,10 @@ const userMemorySchema = new mongoose.Schema({
         default: Date.now
     },
     lastAnalyzed: Date,
+    lastCleared: {
+        type: Date,
+        default: null
+    },
     memoryVersion: {
         type: Number,
         default: 1

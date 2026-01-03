@@ -1,120 +1,259 @@
 console.log('📝 Copilot script starting...');
 
-        // API Configuration
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? `http://${window.location.hostname}:${window.location.port || 3000}`
-            : window.location.origin;
+        // ====================================
+        // 📌 CONFIGURATION
+        // ====================================
+        const CONFIG = {
+            DEFAULT_PORT: 3000,
+            RETRY_ATTEMPTS: 3,
+            RETRY_DELAY: 1000,
+            DEBOUNCE_DELAY: 300,
+            THROTTLE_DELAY: 500,
+            MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
+            SUPPORTED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+            SUPPORTED_AUDIO_TYPES: ['audio/mp3', 'audio/wav', 'audio/ogg']
+        };
+
+        // API Configuration - Only declare if not already defined by memory-ui.js
+        if (typeof API_BASE_URL === 'undefined') {
+            const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+            var API_BASE_URL = isLocalhost
+                ? `http://${window.location.hostname}:${window.location.port || CONFIG.DEFAULT_PORT}`
+                : window.location.origin;
+        }
         
         // Check if running from file:// protocol and warn user
         if (window.location.protocol === 'file:') {
             console.warn('⚠️  WARNING: Running from file:// protocol');
             console.warn('⚠️  Server features (AI, Podcast, etc.) will not work!');
-            console.warn('💡 Solution: Start the server and access via http://localhost:3000');
+            console.warn(`💡 Solution: Start the server and access via http://localhost:${CONFIG.DEFAULT_PORT}`);
         }
         
         console.log('🌐 API Base URL:', API_BASE_URL);
         
-        // State
-        let messages = [];
-        // This is the simple conversation memory used by the frontend when
-        // the backend is unavailable or for quick local replies.
-        let conversation = [];
-        let charCount = 0;
-        let currentQuickResponse = 'balanced';
-        let currentSlide = 0;
-        let totalSlides = 0;
-        let navigationHistory = [];
-        let currentSection = 'discover';
-        let isVoiceActive = false;
-        let uploadedFiles = [];
-        let generatedImages = []; // Image library storage
+        // ====================================
+        // 📌 STATE MANAGEMENT
+        // ====================================
+        const AppState = {
+            messages: [],
+            conversation: [], // Frontend conversation memory
+            charCount: 0,
+            currentQuickResponse: 'balanced',
+            currentSlide: 0,
+            totalSlides: 0,
+            navigationHistory: [],
+            currentSection: 'discover',
+            isVoiceActive: false,
+            uploadedFiles: [],
+            generatedImages: [],
+            ocrResults: [],
+            currentOcrContext: '',
+            currentConversationId: null,
+            isBackendConnected: false,
+            currentAbortController: null,
+            isGenerating: false,
+            
+            // State getters with default values
+            getUserId: () => window.currentUser?.id || window.currentUser?.userId || localStorage.getItem('userId'),
+            getAuthToken: () => localStorage.getItem('authToken'),
+            isAuthenticated: () => !!AppState.getUserId(),
+            
+            // State reset
+            resetConversation: () => {
+                AppState.messages = [];
+                AppState.conversation = [];
+                AppState.charCount = 0;
+                AppState.uploadedFiles = [];
+            }
+        };
         
-        // OCR Storage - Store extracted content for AI to reference
-        let ocrResults = [];
-        let currentOcrContext = ''; // Current OCR context to pass to AI
+        // Legacy variable references (for backward compatibility)
+        let messages = AppState.messages;
+        let conversation = AppState.conversation;
+        let charCount = AppState.charCount;
+        let currentQuickResponse = AppState.currentQuickResponse;
+        let currentSlide = AppState.currentSlide;
+        let totalSlides = AppState.totalSlides;
+        let navigationHistory = AppState.navigationHistory;
+        let currentSection = AppState.currentSection;
+        let isVoiceActive = AppState.isVoiceActive;
+        let uploadedFiles = AppState.uploadedFiles;
+        let generatedImages = AppState.generatedImages;
+        let ocrResults = AppState.ocrResults;
+        let currentOcrContext = AppState.currentOcrContext;
 
-        // Load library data from backend API (per-user images)
+        // ====================================
+        // 📌 UTILITY FUNCTIONS
+        // ====================================
+        
+        /**
+         * Retry async operation with exponential backoff
+         * @param {Function} fn - Async function to retry
+         * @param {number} retries - Number of retry attempts
+         * @param {number} delay - Initial delay in ms
+         * @returns {Promise<any>}
+         */
+        const retryAsync = async (fn, retries = CONFIG.RETRY_ATTEMPTS, delay = CONFIG.RETRY_DELAY) => {
+            try {
+                return await fn();
+            } catch (error) {
+                if (retries === 0) throw error;
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return retryAsync(fn, retries - 1, delay * 2);
+            }
+        };
+        
+        /**
+         * Debounce function to limit execution rate
+         * @param {Function} func - Function to debounce
+         * @param {number} wait - Wait time in ms
+         * @returns {Function}
+         */
+        const debounce = (func, wait = CONFIG.DEBOUNCE_DELAY) => {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func.apply(this, args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        };
+        
+        /**
+         * Throttle function to limit execution frequency
+         * @param {Function} func - Function to throttle
+         * @param {number} limit - Time limit in ms
+         * @returns {Function}
+         */
+        const throttle = (func, limit = CONFIG.THROTTLE_DELAY) => {
+            let inThrottle;
+            return function(...args) {
+                if (!inThrottle) {
+                    func.apply(this, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            };
+        };
+        
+        /**
+         * Safe JSON parse with fallback
+         * @param {string} data - JSON string to parse
+         * @param {any} fallback - Fallback value if parse fails
+         * @returns {any}
+         */
+        const safeJsonParse = (data, fallback = null) => {
+            try {
+                if (data === null || data === undefined) {
+                    return fallback;
+                }
+                return JSON.parse(data);
+            } catch {
+                return fallback;
+            }
+        };
+        
+        // ====================================
+        // 📌 LIBRARY MANAGEMENT
+        // ====================================
+        
+        /**
+         * Load library data from backend API (per-user images)
+         * @returns {Promise<void>}
+         */
         async function loadLibraryFromStorage() {
             try {
-                const userId = currentUser?.id || currentUser?.userId || localStorage.getItem('userId');
+                const userId = AppState.getUserId();
                 
                 // If user is not authenticated, use localStorage fallback
                 if (!userId) {
                     console.log('ℹ️  No authenticated user - using localStorage fallback');
-                    const savedImages = localStorage.getItem('generatedImages');
-                    if (savedImages) {
-                        generatedImages = JSON.parse(savedImages);
-                        generatedImages = generatedImages.map(img => {
-                            if (img.url && !img.url.startsWith('http')) {
-                                img.url = `http://localhost:3000${img.url}`;
-                            }
-                            return img;
-                        });
-                        console.log(`📚 Loaded ${generatedImages.length} images from localStorage (not authenticated)`);
-                    }
+                    const savedImages = safeJsonParse(localStorage.getItem('generatedImages'), []);
+                    
+                    AppState.generatedImages = Array.isArray(savedImages) ? savedImages.map(img => ({
+                        ...img,
+                        url: img.url?.startsWith('http') ? img.url : `http://localhost:${CONFIG.DEFAULT_PORT}${img.url}`
+                    })) : [];
+                    
+                    console.log(`📚 Loaded ${AppState.generatedImages.length} images from localStorage (not authenticated)`);
                     return;
                 }
                 
-                // Load user's images from backend API
-                const authToken = localStorage.getItem('authToken');
+                // Load user's images from backend API with retry logic
+                const authToken = AppState.getAuthToken();
                 console.log('📸 Loading user images from backend for user:', userId);
                 console.log('🔑 Auth token present:', !!authToken);
                 
-                const response = await fetch(`${API_BASE_URL}/api/ai/my-images`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken || ''}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    console.warn(`⚠️  Failed to load images from backend: ${response.status}`);
-                    // Fallback to localStorage if backend fails
-                    const savedImages = localStorage.getItem('generatedImages');
-                    if (savedImages) {
-                        generatedImages = JSON.parse(savedImages);
-                        console.log(`📚 Fallback: Loaded ${generatedImages.length} images from localStorage`);
-                    }
-                    return;
-                }
-                
-                const data = await response.json();
-                
-                if (data.success && data.images) {
-                    // Convert backend image list to format compatible with frontend
-                    generatedImages = data.images.map(img => ({
-                        url: img.url.startsWith('http') ? img.url : `${API_BASE_URL}${img.url}`,
-                        filename: img.filename,
-                        timestamp: img.timestamp,
-                        prompt: img.filename // Use filename as prompt fallback
-                    }));
+                const fetchImages = async () => {
+                    const response = await fetch(`${API_BASE_URL}/api/ai/my-images`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken || ''}`
+                        },
+                        signal: AbortSignal.timeout(10000) // 10 second timeout
+                    });
                     
-                    console.log(`✅ Loaded ${generatedImages.length} images from backend`);
-                } else {
-                    console.log('ℹ️  No images found for this user');
-                    generatedImages = [];
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    return response.json();
+                };
+                
+                try {
+                    const data = await retryAsync(fetchImages, 2, 1000);
+                    
+                    if (data.success && Array.isArray(data.images)) {
+                        // Convert backend image list to format compatible with frontend
+                        AppState.generatedImages = data.images.map(img => ({
+                            url: img.url?.startsWith('http') ? img.url : `${API_BASE_URL}${img.url}`,
+                            filename: img.filename || 'unknown',
+                            timestamp: img.timestamp || Date.now(),
+                            prompt: img.prompt || img.filename || 'Generated Image'
+                        }));
+                        
+                        console.log(`✅ Loaded ${AppState.generatedImages.length} images from backend`);
+                    } else {
+                        console.log('ℹ️  No images found for this user');
+                        AppState.generatedImages = [];
+                    }
+                } catch (fetchError) {
+                    console.warn(`⚠️  Failed to load images from backend:`, fetchError.message);
+                    // Fallback to localStorage if backend fails
+                    const savedImages = safeJsonParse(localStorage.getItem('generatedImages'), []);
+                    AppState.generatedImages = Array.isArray(savedImages) ? savedImages : [];
+                    console.log(`📚 Fallback: Loaded ${AppState.generatedImages.length} images from localStorage`);
                 }
             } catch (error) {
-                console.error('❌ Error loading library from backend:', error);
+                console.error('❌ Error loading library from backend:', error.message || error);
                 // Fallback to localStorage
                 try {
-                    const savedImages = localStorage.getItem('generatedImages');
-                    if (savedImages) {
-                        generatedImages = JSON.parse(savedImages);
-                        console.log(`📚 Fallback: Loaded ${generatedImages.length} images from localStorage after error`);
-                    }
+                    const savedImages = safeJsonParse(localStorage.getItem('generatedImages'), []);
+                    AppState.generatedImages = Array.isArray(savedImages) ? savedImages : [];
+                    console.log(`📚 Fallback: Loaded ${AppState.generatedImages.length} images from localStorage after error`);
                 } catch (fallbackError) {
-                    console.error('❌ Even fallback failed:', fallbackError);
-                    generatedImages = [];
+                    console.error('❌ Even fallback failed:', fallbackError.message || fallbackError);
+                    AppState.generatedImages = [];
                 }
+            } finally {
+                // Sync legacy variable
+                generatedImages = AppState.generatedImages;
             }
         }
 
-        // Display library content
+        /**
+         * Display library content with generated images
+         * @returns {void}
+         */
         function displayLibrary() {
             const messagesContainer = document.getElementById('messagesContainer');
-            if (!messagesContainer) return;
+            if (!messagesContainer) {
+                console.warn('⚠️  Messages container not found');
+                return;
+            }
             
             messagesContainer.innerHTML = '';
             
@@ -128,7 +267,8 @@ console.log('📝 Copilot script starting...');
             messagesContainer.appendChild(libraryHeader);
             
             // Display generated images
-            if (generatedImages.length > 0) {
+            const images = AppState.generatedImages || [];
+            if (images.length > 0) {
                 const imagesSection = document.createElement('div');
                 imagesSection.className = 'library-section';
                 imagesSection.innerHTML = `
@@ -335,6 +475,16 @@ console.log('📝 Copilot script starting...');
                         }
                     });
                 }
+
+                // Setup memory manager modal
+                const memoryManagerModal = document.getElementById('memoryManagerModal');
+                if (memoryManagerModal) {
+                    memoryManagerModal.addEventListener('click', function(e) {
+                        if (e.target === memoryManagerModal) {
+                            closeMemoryManager();
+                        }
+                    });
+                }
                 
                 // Setup mobile sidebar enhancements
                 setupMobileSidebarEnhancements();
@@ -472,6 +622,13 @@ console.log('📝 Copilot script starting...');
             menu.className = 'conversation-menu';
             menu.dataset.id = conversationId;
             
+            // Position menu - use data-conversation-id instead of data-id
+            const conversationItem = document.querySelector(`[data-conversation-id="${conversationId}"]`);
+            
+            // Check if conversation is pinned
+            const isPinned = conversationItem && conversationItem.classList.contains('pinned');
+            const pinText = isPinned ? 'Unpin chat' : 'Pin chat';
+            
             menu.innerHTML = `
                 <button class="conversation-menu-item" onclick="shareConversation('${conversationId}')">
                     <i class="fas fa-share-nodes"></i>
@@ -479,7 +636,7 @@ console.log('📝 Copilot script starting...');
                 </button>
                 <button class="conversation-menu-item" onclick="togglePinConversation('${conversationId}')">
                     <i class="fas fa-thumbtack"></i>
-                    <span id="pinBtnText_${conversationId}">Pin chat</span>
+                    <span id="pinBtnText_${conversationId}">${pinText}</span>
                 </button>
                 <button class="conversation-menu-item" onclick="renameConversation('${conversationId}')">
                     <i class="fas fa-pen"></i>
@@ -490,9 +647,6 @@ console.log('📝 Copilot script starting...');
                     <span>Delete chat</span>
                 </button>
             `;
-
-            // Position menu - use data-conversation-id instead of data-id
-            const conversationItem = document.querySelector(`[data-conversation-id="${conversationId}"]`);
             if (conversationItem) {
                 conversationItem.style.position = 'relative';
                 conversationItem.appendChild(menu);
@@ -1817,15 +1971,40 @@ console.log('📝 Copilot script starting...');
         // Chat Functions
         function handleKeyPress(event) {
             if (event.key === 'Enter') {
-                if (!event.shiftKey) {
-                    // Enter without Shift - send message
-                    event.preventDefault();
-                    sendMessage();
+                // Check if device is mobile
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+                
+                if (isMobile) {
+                    // On mobile: Enter adds new line, send button is used to send
+                    // Allow default behavior (new line)
+                } else {
+                    // On desktop: Enter sends, Shift+Enter adds new line
+                    if (!event.shiftKey) {
+                        event.preventDefault();
+                        sendMessage();
+                    }
                 }
-                // Shift+Enter - allow default behavior (new line)
             }
         }
         window.handleKeyPress = handleKeyPress;
+
+        // Add new line at cursor position (for mobile new line button)
+        function insertNewLine() {
+            const input = document.getElementById('chatInput');
+            if (!input) return;
+            
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const value = input.value;
+            
+            input.value = value.substring(0, start) + '\n' + value.substring(end);
+            input.selectionStart = input.selectionEnd = start + 1;
+            
+            // Trigger resize
+            updateCharCounter();
+            input.focus();
+        }
+        window.insertNewLine = insertNewLine;
 
         function autoResizeTextarea(textarea) {
             textarea.style.height = 'auto';
@@ -1842,6 +2021,15 @@ console.log('📝 Copilot script starting...');
             autoResizeTextarea(input);
         }
         window.updateCharCounter = updateCharCounter;
+
+        // Set up event listeners for chat input
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', handleKeyPress);
+                chatInput.addEventListener('input', updateCharCounter);
+            }
+        });
 
         // --- Conversation memory helpers (simple local memory) ---
         function saveMessage(role, text) {
@@ -2348,7 +2536,8 @@ async function sendMessage(userMessage) {
                         body: JSON.stringify({
                             message: fullMessage,
                             history: sessionHistory,
-                            responseType: currentQuickResponse || 'balanced'
+                            responseType: currentQuickResponse || 'balanced',
+                            emojiUsage: userSettings.emojiUsage || 'default'
                         }),
                         signal: currentAbortController.signal
                     });
@@ -2680,6 +2869,158 @@ async function sendMessage(userMessage) {
             return `<div class="message-content">${html}</div>`;
         }
 
+        // ==================== EMOJI UTILITY FUNCTIONS ====================
+        
+        // Emoji sets for different contexts
+        const emojiSets = {
+            positive: ['😊', '👍', '✨', '🎉', '💡', '🚀', '⭐', '💪', '🌟', '🎯'],
+            negative: ['😔', '❌', '⚠️', '🤔', '💭', '🔍', '📌', '⚡'],
+            tech: ['💻', '🔧', '⚙️', '🖥️', '📱', '🌐', '🔌', '💾', '🖱️', '⌨️'],
+            creative: ['🎨', '✏️', '📝', '🖊️', '🎭', '🎪', '🎬', '📚', '🔖'],
+            learning: ['📖', '🎓', '🧠', '💭', '🔬', '🔭', '📊', '📈', '💡'],
+            communication: ['💬', '🗨️', '💌', '📢', '📣', '🔔', '📧', '📞'],
+            time: ['⏰', '⌛', '⏳', '🕐', '📅', '🗓️'],
+            nature: ['🌱', '🌿', '🌳', '🌺', '🌸', '🌼', '🌻', '🍀'],
+            punctuation: ['❓', '❗', '‼️', '⁉️', '💯', '✅', '☑️']
+        };
+
+        function addEmojisToText(text, emojiLevel = 'default') {
+            if (!text || emojiLevel === 'less') return text;
+            
+            // Analyze if this message needs emojis based on content and tone
+            if (!shouldUseEmojis(text, emojiLevel)) {
+                return text;
+            }
+            
+            const intensity = emojiLevel === 'more' ? 2 : 1;
+            
+            // Split text into sentences
+            let sentences = text.split(/([.!?]\s+)/);
+            let result = '';
+            let emojisAdded = 0;
+            const maxEmojis = emojiLevel === 'more' ? 5 : 3;
+            
+            for (let i = 0; i < sentences.length; i++) {
+                let sentence = sentences[i];
+                
+                // Skip punctuation parts
+                if (sentence.match(/^[.!?]\s+$/)) {
+                    result += sentence;
+                    continue;
+                }
+                
+                // Add emoji selectively based on content, intensity, and limit
+                if (emojisAdded < maxEmojis && sentence.length > 20 && shouldAddEmojiToSentence(sentence, intensity)) {
+                    const enhanced = addContextualEmoji(sentence, intensity);
+                    if (enhanced !== sentence) {
+                        emojisAdded++;
+                        sentence = enhanced;
+                    }
+                }
+                
+                result += sentence;
+            }
+            
+            return result;
+        }
+
+        function shouldUseEmojis(text, emojiLevel) {
+            const lowerText = text.toLowerCase();
+            
+            // Don't use emojis for very technical/code-heavy content
+            if (text.includes('```') || text.includes('function') || text.includes('const ') || text.includes('class ')) {
+                return false;
+            }
+            
+            // Don't use emojis for error messages or warnings
+            if (lowerText.includes('error:') || lowerText.includes('warning:') || lowerText.includes('failed')) {
+                return false;
+            }
+            
+            // Always use for 'more' mode unless it's pure code
+            if (emojiLevel === 'more') {
+                return true;
+            }
+            
+            // For 'default' mode, use emojis only for conversational, helpful, or positive content
+            const conversationalIndicators = [
+                'great', 'awesome', 'help', 'glad', 'happy', 'welcome',
+                'sure', 'absolutely', 'perfect', 'excellent', 'wonderful',
+                'question', 'how', 'what', 'why', 'learn', 'understand',
+                'create', 'build', 'improve', 'thanks', 'thank you'
+            ];
+            
+            return conversationalIndicators.some(word => lowerText.includes(word));
+        }
+
+        function shouldAddEmojiToSentence(sentence, intensity) {
+            // For intensity 2 (more mode), add to more sentences
+            if (intensity === 2) {
+                return sentence.length > 15;
+            }
+            
+            // For default mode, be selective
+            const lowerSentence = sentence.toLowerCase();
+            
+            // Add to questions
+            if (sentence.includes('?')) return true;
+            
+            // Add to enthusiastic statements
+            if (sentence.includes('!')) return true;
+            
+            // Add to helpful/positive statements
+            const positiveWords = ['great', 'help', 'sure', 'yes', 'perfect', 'excellent', 'glad'];
+            if (positiveWords.some(word => lowerSentence.includes(word))) return true;
+            
+            // Otherwise, only 30% chance to add emoji
+            return Math.random() < 0.3;
+        }
+
+        function addContextualEmoji(sentence, intensity = 1) {
+            const lowerSentence = sentence.toLowerCase();
+            let emoji = '';
+            
+            // Determine context and select appropriate emoji (order matters - most specific first)
+            if (lowerSentence.match(/\b(great|excellent|perfect|amazing|wonderful|fantastic)\b/)) {
+                emoji = getRandomEmoji(emojiSets.positive);
+            } else if (lowerSentence.match(/\b(code|programming|software|development|computer|tech|function|variable)\b/)) {
+                emoji = getRandomEmoji(emojiSets.tech);
+            } else if (lowerSentence.match(/\b(learn|study|understand|knowledge|education|tutorial)\b/)) {
+                emoji = getRandomEmoji(emojiSets.learning);
+            } else if (lowerSentence.match(/\b(create|design|art|write|creative|build)\b/)) {
+                emoji = getRandomEmoji(emojiSets.creative);
+            } else if (lowerSentence.match(/\b(help|assist|support|guide|show|explain)\b/)) {
+                emoji = getRandomEmoji(emojiSets.communication);
+            } else if (lowerSentence.match(/\b(time|when|schedule|date|deadline)\b/)) {
+                emoji = getRandomEmoji(emojiSets.time);
+            } else if (lowerSentence.match(/\b(grow|develop|progress|improve|enhance)\b/)) {
+                emoji = getRandomEmoji(emojiSets.nature);
+            } else if (lowerSentence.match(/\?$/)) {
+                emoji = '🤔';
+            } else if (lowerSentence.match(/!$/)) {
+                emoji = getRandomEmoji(emojiSets.positive);
+            } else {
+                // No emoji needed for this sentence
+                return sentence;
+            }
+            
+            // Add emoji at the end only (cleaner look)
+            if (emoji) {
+                // For 'more' mode, occasionally add at both ends for emphasis
+                if (intensity === 2 && Math.random() < 0.3) {
+                    return `${emoji} ${sentence} ${emoji}`;
+                } else {
+                    return `${sentence} ${emoji}`;
+                }
+            }
+            
+            return sentence;
+        }
+
+        function getRandomEmoji(emojiArray) {
+            return emojiArray[Math.floor(Math.random() * emojiArray.length)];
+        }
+
         // Helper function to create search results UI
         function createSearchResultsHTML(searchResults) {
             if (!searchResults || searchResults.length === 0) return '';
@@ -2788,7 +3129,12 @@ async function sendMessage(userMessage) {
             
             // For assistant messages, use formatted HTML; for user messages, use plain text
             if (sender === 'assistant') {
-                bubble.innerHTML = formatTextToHtml(text);
+                // Apply emoji enhancement based on user settings
+                let processedText = text;
+                if (userSettings.emojiUsage && userSettings.emojiUsage !== 'less') {
+                    processedText = addEmojisToText(text, userSettings.emojiUsage);
+                }
+                bubble.innerHTML = formatTextToHtml(processedText);
                 
                 // Add image results if available (show first for visual impact)
                 if (imageResults && imageResults.length > 0) {
@@ -3454,10 +3800,11 @@ async function sendMessage(userMessage) {
             },
             Messages: {
                 async send(conversationId, content, responseType = 'balanced', signal = null) {
+                    const emojiUsage = userSettings.emojiUsage || 'default';
                     const fetchOptions = {
                         method: 'POST',
                         headers: API.getHeaders(),
-                        body: JSON.stringify({ conversationId, content, responseType })
+                        body: JSON.stringify({ conversationId, content, responseType, emojiUsage })
                     };
                     if (signal) {
                         fetchOptions.signal = signal;
@@ -3572,6 +3919,9 @@ async function sendMessage(userMessage) {
         function createConversationElement(conversation) {
             const conversationDiv = document.createElement('div');
             conversationDiv.className = 'conversation-item';
+            if (conversation.isPinned) {
+                conversationDiv.classList.add('pinned');
+            }
             conversationDiv.dataset.conversationId = conversation.id || conversation._id;
             conversationDiv.onclick = () => loadConversationById(conversation.id || conversation._id);
 
@@ -3589,6 +3939,14 @@ async function sendMessage(userMessage) {
             
             contentWrapper.appendChild(icon);
             contentWrapper.appendChild(titleSpan);
+            
+            // Add pin icon if conversation is pinned
+            if (conversation.isPinned) {
+                const pinIcon = document.createElement('i');
+                pinIcon.className = 'fas fa-thumbtack pin-indicator';
+                pinIcon.title = 'Pinned';
+                contentWrapper.appendChild(pinIcon);
+            }
 
             // Three-dots menu button
             const menuButton = document.createElement('button');
@@ -3806,10 +4164,12 @@ async function sendMessage(userMessage) {
                 
                 if (response.ok && data.success) {
                     localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userId', data.user.id || data.user._id);
                     currentUser = {
                         ...data.user,
                         userId: data.user.id || data.user._id  // Map 'id' to 'userId' for API headers
                     };
+                    window.currentUser = currentUser;
                     
                     // Load user's profile picture from backend
                     if (data.user.profilePicture) {
@@ -3892,10 +4252,12 @@ async function sendMessage(userMessage) {
                 
                 if (response.ok && data.success) {
                     localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userId', data.user.id || data.user._id);
                     currentUser = {
                         ...data.user,
                         userId: data.user.id || data.user._id  // Map 'id' to 'userId' for API headers
                     };
+                    window.currentUser = currentUser;
                     
                     showAuthSuccess('signupSuccess', 'Account created successfully! Welcome aboard.');
                     
@@ -4167,7 +4529,10 @@ async function sendMessage(userMessage) {
             devMode: false,
             voice: 'juniper',
             voiceSpeed: 'normal',
-            voiceOutput: true
+            voiceOutput: true,
+            savedMemories: true,
+            chatHistory: true,
+            emojiUsage: 'default' // Options: 'default', 'more', 'less'
         };
 
         function showSettings() {
@@ -4257,6 +4622,9 @@ async function sendMessage(userMessage) {
             document.getElementById('responseStyleSelect').value = userSettings.responseStyle;
             document.getElementById('voiceSelect').value = userSettings.voice;
             document.getElementById('voiceSpeedSelect').value = userSettings.voiceSpeed;
+            if (document.getElementById('emojiUsageSelect')) {
+                document.getElementById('emojiUsageSelect').value = userSettings.emojiUsage || 'default';
+            }
             
             // Update toggles
             updateToggle('autoScrollToggle', userSettings.autoScroll);
@@ -4267,6 +4635,8 @@ async function sendMessage(userMessage) {
             updateToggle('keyboardShortcutsToggle', userSettings.keyboardShortcuts);
             updateToggle('devModeToggle', userSettings.devMode);
             updateToggle('voiceOutputToggle', userSettings.voiceOutput);
+            updateToggle('savedMemoriesToggle', userSettings.savedMemories);
+            updateToggle('chatHistoryToggle', userSettings.chatHistory);
 
             // Update account section if user is logged in
             if (currentUser) {
@@ -4348,6 +4718,14 @@ async function sendMessage(userMessage) {
             // You can add voice speed adjustment implementation here
         }
 
+        function changeEmojiUsage(usage) {
+            userSettings.emojiUsage = usage;
+            console.log('Emoji usage changed to:', usage);
+            // Save setting immediately
+            saveSettings();
+        }
+        window.changeEmojiUsage = changeEmojiUsage;
+
         function applySetting(settingName, value) {
             switch(settingName) {
                 case 'devMode':
@@ -4361,6 +4739,18 @@ async function sendMessage(userMessage) {
                     break;
                 case 'sound':
                     console.log('Sound effects:', value);
+                    break;
+                case 'savedMemories':
+                    console.log('Saved memories:', value);
+                    if (!value) {
+                        console.log('Memory references disabled');
+                    }
+                    break;
+                case 'chatHistory':
+                    console.log('Chat history references:', value);
+                    if (!value) {
+                        console.log('Chat history references disabled');
+                    }
                     break;
                 default:
                     console.log(`Setting ${settingName}:`, value);
@@ -4400,7 +4790,10 @@ async function sendMessage(userMessage) {
                     devMode: false,
                     voice: 'juniper',
                     voiceSpeed: 'normal',
-                    voiceOutput: true
+                    voiceOutput: true,
+                    savedMemories: true,
+                    chatHistory: true,
+                    emojiUsage: 'default'
                 };
                 
                 const userId = currentUser?.userId || currentUser?.id;
@@ -4416,6 +4809,326 @@ async function sendMessage(userMessage) {
             }
         }
         window.resetSettings = resetSettings;
+
+        // ==================== MEMORY MANAGER FUNCTIONS ====================
+        
+        // Memory storage
+        let userMemories = [];
+
+        // Load memories from localStorage
+        function loadMemories() {
+            try {
+                const userId = currentUser?.userId || currentUser?.id;
+                const memoryKey = userId ? `memories_${userId}` : 'memories';
+                const stored = localStorage.getItem(memoryKey);
+                userMemories = stored ? JSON.parse(stored) : [];
+                return userMemories;
+            } catch (error) {
+                console.error('Error loading memories:', error);
+                return [];
+            }
+        }
+
+        // Save memories to localStorage
+        function saveMemories() {
+            try {
+                const userId = currentUser?.userId || currentUser?.id;
+                const memoryKey = userId ? `memories_${userId}` : 'memories';
+                localStorage.setItem(memoryKey, JSON.stringify(userMemories));
+            } catch (error) {
+                console.error('Error saving memories:', error);
+            }
+        }
+
+        // Open Memory Manager Modal
+        function openMemoryManager() {
+            const modal = document.getElementById('memoryManagerModal');
+            if (modal) {
+                modal.classList.add('active');
+                loadMemories();
+                updateMemoryStats();
+                renderMemories();
+                
+                // Initialize with memories tab
+                switchMemoryTab('memories');
+                
+                // Load insights and predictions from memory-ui.js if available
+                if (typeof loadUserInsights === 'function') {
+                    loadUserInsights();
+                }
+                if (typeof loadLearningProgress === 'function') {
+                    loadLearningProgress();
+                }
+            }
+        }
+        window.openMemoryManager = openMemoryManager;
+
+        // Close Memory Manager Modal
+        function closeMemoryManager() {
+            const modal = document.getElementById('memoryManagerModal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+        window.closeMemoryManager = closeMemoryManager;
+
+        // Switch between memory tabs
+        function switchMemoryTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.memory-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.getAttribute('data-tab') === tabName) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // Update tab content
+            document.querySelectorAll('.memory-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const activeContent = document.getElementById(`${tabName}TabContent`);
+            if (activeContent) {
+                activeContent.classList.add('active');
+            }
+            
+            // Load specific tab data
+            if (tabName === 'insights' && typeof loadUserInsights === 'function') {
+                loadUserInsights();
+                if (typeof loadLearningProgress === 'function') {
+                    loadLearningProgress();
+                }
+            } else if (tabName === 'predictions' && typeof loadPredictions === 'function') {
+                loadPredictions();
+            }
+        }
+        window.switchMemoryTab = switchMemoryTab;
+
+        // Update memory statistics
+        function updateMemoryStats() {
+            const totalCount = userMemories.length;
+            const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+            const recentCount = userMemories.filter(m => m.timestamp > sevenDaysAgo).length;
+
+            const totalEl = document.getElementById('totalMemoriesCount');
+            const recentEl = document.getElementById('recentMemoriesCount');
+            
+            if (totalEl) totalEl.textContent = totalCount;
+            if (recentEl) recentEl.textContent = recentCount;
+        }
+
+        // Render memories list
+        function renderMemories(searchTerm = '') {
+            const container = document.getElementById('memoriesList');
+            if (!container) return;
+
+            let memories = [...userMemories];
+            
+            // Filter by search term
+            if (searchTerm) {
+                memories = memories.filter(m => 
+                    m.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    m.category?.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            }
+
+            // Sort by timestamp (newest first)
+            memories.sort((a, b) => b.timestamp - a.timestamp);
+
+            if (memories.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-memories" style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                        <i class="fas fa-brain" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px;"></i>
+                        <p style="margin: 0; font-size: 14px;">${searchTerm ? 'No matching memories found' : 'No memories saved yet'}</p>
+                        <p style="margin: 8px 0 0 0; font-size: 12px; opacity: 0.7;">
+                            ${searchTerm ? 'Try a different search term' : 'Start chatting and important details will be remembered'}
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = memories.map((memory, index) => {
+                const date = new Date(memory.timestamp);
+                const timeAgo = getTimeAgo(memory.timestamp);
+                
+                return `
+                    <div class="memory-item" data-memory-id="${memory.id}">
+                        <div class="memory-item-header">
+                            <div style="flex: 1;">
+                                ${memory.category ? `<span class="memory-category-badge">${memory.category}</span>` : ''}
+                            </div>
+                            <div class="memory-item-actions">
+                                <button class="memory-action-btn" onclick="editMemory('${memory.id}')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="memory-action-btn delete" onclick="deleteMemory('${memory.id}')" title="Delete">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="memory-item-content">${escapeHtml(memory.content)}</div>
+                        <div class="memory-item-meta">
+                            <span><i class="fas fa-clock"></i> ${timeAgo}</span>
+                            ${memory.source ? `<span><i class="fas fa-comment"></i> From conversation</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Filter memories by search term
+        function filterMemories() {
+            const searchInput = document.getElementById('memorySearchInput');
+            if (searchInput) {
+                renderMemories(searchInput.value);
+            }
+        }
+        window.filterMemories = filterMemories;
+
+        // Add a new memory
+        function addMemory(content, category = null, source = null) {
+            const memory = {
+                id: Date.now().toString(),
+                content: content,
+                category: category,
+                source: source,
+                timestamp: Date.now()
+            };
+            
+            userMemories.push(memory);
+            saveMemories();
+            return memory;
+        }
+        window.addMemory = addMemory;
+
+        // Edit a memory
+        function editMemory(memoryId) {
+            const memory = userMemories.find(m => m.id === memoryId);
+            if (!memory) return;
+
+            const newContent = prompt('Edit memory:', memory.content);
+            if (newContent && newContent.trim() !== '') {
+                memory.content = newContent.trim();
+                memory.timestamp = Date.now(); // Update timestamp
+                saveMemories();
+                renderMemories();
+                updateMemoryStats();
+            }
+        }
+        window.editMemory = editMemory;
+
+        // Delete a memory
+        function deleteMemory(memoryId) {
+            if (confirm('Are you sure you want to delete this memory?')) {
+                userMemories = userMemories.filter(m => m.id !== memoryId);
+                saveMemories();
+                renderMemories();
+                updateMemoryStats();
+            }
+        }
+        window.deleteMemory = deleteMemory;
+
+        // Clear all memories - DISABLED (using memory-ui.js version that calls backend API)
+        // function clearAllMemories() {
+        //     if (confirm('Are you sure you want to delete all memories? This action cannot be undone.')) {
+        //         userMemories = [];
+        //         saveMemories();
+        //         renderMemories();
+        //         updateMemoryStats();
+        //     }
+        // }
+        // window.clearAllMemories = clearAllMemories;
+
+        // Export memories as JSON
+        function exportMemories() {
+            if (userMemories.length === 0) {
+                alert('No memories to export!');
+                return;
+            }
+
+            const dataStr = JSON.stringify(userMemories, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `copilotx-memories-${Date.now()}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+        }
+        window.exportMemories = exportMemories;
+
+        // Helper function to get time ago string
+        function getTimeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+            if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+            return new Date(timestamp).toLocaleDateString();
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize memory system when user signs in
+        function initializeMemorySystem() {
+            loadMemories();
+            
+            // Initialize memory UI from memory-ui.js if available
+            if (typeof initMemoryUI === 'function') {
+                initMemoryUI();
+            }
+            
+            // Add some sample memories for demonstration (can be removed)
+            if (userMemories.length === 0 && currentUser) {
+                addMemory('User prefers detailed explanations', 'Preferences', 'conversation');
+                addMemory('Working on a CopilotX AI project', 'Projects', 'conversation');
+            }
+        }
+
+        // Sync memories with backend API
+        async function syncMemoriesWithBackend() {
+            try {
+                const authToken = localStorage.getItem('authToken');
+                if (!authToken) return;
+
+                const response = await fetch(`${API_BASE_URL}/api/memory/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                        'user-id': localStorage.getItem('userId') || ''
+                    },
+                    body: JSON.stringify({ memories: userMemories })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Memories synced with backend');
+                }
+            } catch (error) {
+                console.error('Error syncing memories:', error);
+            }
+        }
+        window.syncMemoriesWithBackend = syncMemoriesWithBackend;
+
+        // Add feedback to messages for learning
+        function addMessageFeedback(messageId, isHelpful) {
+            if (typeof recordFeedback === 'function') {
+                const feedbackType = isHelpful ? 'helpful' : 'not_helpful';
+                recordFeedback(messageId, feedbackType);
+            }
+        }
+        window.addMessageFeedback = addMessageFeedback;
 
         // Account Management Functions
         function openChangePasswordModal() {
@@ -4574,7 +5287,7 @@ async function sendMessage(userMessage) {
             
             // Update avatar with profile picture or initials
             const profilePicture = userId ? localStorage.getItem(`userProfilePicture_${userId}`) : null;
-            const initials = displayName.split(/[\s_]+/).map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            const initials = displayName ? displayName.split(/[\s_]+/).map(n => n[0]).join('').toUpperCase().substring(0, 2) : 'U';
             const editProfileAvatar = document.getElementById('editProfileAvatar');
             
             if (editProfileAvatar) {
@@ -4632,7 +5345,7 @@ async function sendMessage(userMessage) {
                 }
 
                 // Update avatar initials
-                const initials = displayName.split(/[\s_]+/).map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                const initials = displayName ? displayName.split(/[\s_]+/).map(n => n[0]).join('').toUpperCase().substring(0, 2) : 'U';
                 const avatars = document.querySelectorAll('#userAvatar, #editProfileAvatar');
                 avatars.forEach(avatar => {
                     avatar.textContent = initials;
@@ -6226,37 +6939,75 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
 
         // Download Podcast
         function downloadPodcast() {
-            if (!currentPodcastData) {
+            // Check both podcast sources: modal (currentPodcastData) and chat (window.lastGeneratedPodcast)
+            const podcastData = currentPodcastData || window.lastGeneratedPodcast;
+            
+            if (!podcastData) {
                 alert('No podcast to download');
                 return;
             }
 
             const link = document.createElement('a');
-            link.href = currentPodcastData.audioUrl;
-            link.download = `${currentPodcastData.title.replace(/[^a-z0-9]/gi, '_')}_podcast.mp3`;
+            
+            // Handle different data structures
+            if (podcastData.audioUrl) {
+                // From modal
+                link.href = podcastData.audioUrl;
+                link.download = `${podcastData.title.replace(/[^a-z0-9]/gi, '_')}_podcast.mp3`;
+            } else if (podcastData.url) {
+                // From chat
+                link.href = podcastData.url;
+                link.download = podcastData.fileName || `podcast_${Date.now()}.mp3`;
+            } else {
+                alert('Unable to download podcast - invalid data');
+                return;
+            }
+            
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            addMessage('assistant', `📥 Podcast "${currentPodcastData.title}" downloaded successfully!`);
+            const title = podcastData.title || podcastData.topic || 'Podcast';
+            addMessage('assistant', `📥 Podcast "${title}" downloaded successfully!`);
         }
 
         // Share Podcast
         async function sharePodcast() {
-            if (!currentPodcastData) {
+            // Check both podcast sources: modal (currentPodcastData) and chat (window.lastGeneratedPodcast)
+            const podcastData = currentPodcastData || window.lastGeneratedPodcast;
+            
+            if (!podcastData) {
                 alert('No podcast to share');
                 return;
             }
 
+            // Get blob and title based on data structure
+            let audioBlob, title, fileName;
+            
+            if (podcastData.audioBlob) {
+                // From modal
+                audioBlob = podcastData.audioBlob;
+                title = podcastData.title;
+                fileName = `${title.replace(/[^a-z0-9]/gi, '_')}_podcast.mp3`;
+            } else if (podcastData.blob) {
+                // From chat
+                audioBlob = podcastData.blob;
+                title = podcastData.topic || 'Podcast';
+                fileName = podcastData.fileName || `${title.replace(/[^a-z0-9]/gi, '_')}_podcast.mp3`;
+            } else {
+                alert('Unable to share podcast - invalid data');
+                return;
+            }
+
             const podcastFile = new File(
-                [currentPodcastData.audioBlob], 
-                `${currentPodcastData.title.replace(/[^a-z0-9]/gi, '_')}_podcast.mp3`,
+                [audioBlob], 
+                fileName,
                 { type: 'audio/mpeg' }
             );
 
             const shareData = {
-                title: currentPodcastData.title,
-                text: `Check out my podcast: ${currentPodcastData.title}`,
+                title: title,
+                text: `Check out my podcast: ${title}`,
                 files: [podcastFile]
             };
 
@@ -6266,7 +7017,7 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
                     addMessage('assistant', `📤 Podcast shared successfully!`);
                 } else {
                     // Fallback: Copy link to clipboard
-                    const shareText = `Check out my podcast: ${currentPodcastData.title}`;
+                    const shareText = `Check out my podcast: ${title}`;
                     await navigator.clipboard.writeText(shareText);
                     alert('Podcast info copied to clipboard! (Note: Direct file sharing not supported on this device)');
                 }

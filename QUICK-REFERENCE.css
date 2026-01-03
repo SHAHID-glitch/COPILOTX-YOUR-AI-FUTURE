@@ -1,0 +1,218 @@
+/* ==================== QUICK REFERENCE CARD ==================== */
+/*
+ * 🎨 ENHANCED CSS - QUICK REFERENCE
+ * Copy and paste these examples directly into your HTML!
+ */
+
+/* ==================== BUTTONS ==================== */
+/*
+<button class="btn-modern btn-gradient-primary">Primary</button>
+<button class="btn-modern btn-gradient-rainbow">Rainbow</button>
+<button class="btn-modern btn-neon">Neon</button>
+<button class="btn-modern btn-glass">Glass</button>
+<button class="btn-modern btn-brutal">Brutal</button>
+*/
+
+/* ==================== CARDS ==================== */
+/*
+<!-- Modern Card -->
+<div class="card-modern card-hover-lift">
+    <h3>Title</h3>
+    <p>Content</p>
+</div>
+
+<!-- Glass Card -->
+<div class="card-glass">
+    <h3>Glass Effect</h3>
+</div>
+
+<!-- Gradient Card -->
+<div class="card-gradient">
+    <h3>Rainbow</h3>
+</div>
+*/
+
+/* ==================== LOADERS ==================== */
+/*
+<div class="loader-spinner"></div>
+<div class="loader-dots"><span></span><span></span><span></span></div>
+<div class="loader-pulse"></div>
+<div class="loader-bars"><span></span><span></span><span></span></div>
+*/
+
+/* ==================== PROGRESS ==================== */
+/*
+<div class="progress-modern">
+    <div class="progress-bar-modern" style="width: 75%;"></div>
+</div>
+
+<div class="progress-modern">
+    <div class="progress-bar-modern progress-striped" style="width: 60%;"></div>
+</div>
+
+<div class="progress-modern">
+    <div class="progress-bar-modern progress-glow" style="width: 85%;"></div>
+</div>
+*/
+
+/* ==================== BADGES ==================== */
+/*
+<span class="badge-modern badge-gradient">Featured</span>
+<span class="badge-modern badge-outline">New</span>
+<span class="badge-modern badge-glow">Premium</span>
+<span class="badge-modern badge-pulse">Live</span>
+*/
+
+/* ==================== INPUTS ==================== */
+/*
+<input type="text" class="input-modern" placeholder="Modern input">
+<input type="text" class="input-glow" placeholder="Glowing input">
+
+<div class="input-group-modern">
+    <div class="input-group-icon">🔍</div>
+    <input type="text" placeholder="Search...">
+</div>
+*/
+
+/* ==================== TEXT EFFECTS ==================== */
+/*
+<h1 class="text-gradient-primary">Gradient Text</h1>
+<h1 class="text-gradient-rainbow">Rainbow Text</h1>
+<h1 class="text-glow">Glowing Text</h1>
+*/
+
+/* ==================== TOASTS ==================== */
+/*
+<div class="toast toast-success">
+    <div class="toast-icon">✓</div>
+    <div class="toast-content">
+        <div class="toast-title">Success!</div>
+        <div class="toast-message">Operation completed.</div>
+    </div>
+    <button class="toast-close">×</button>
+</div>
+*/
+
+/* ==================== SKELETON ==================== */
+/*
+<div class="flex items-center gap-3">
+    <div class="skeleton skeleton-avatar"></div>
+    <div style="flex: 1;">
+        <div class="skeleton skeleton-text"></div>
+        <div class="skeleton skeleton-text"></div>
+    </div>
+</div>
+*/
+
+/* ==================== LAYOUT ==================== */
+/*
+<!-- Flexbox -->
+<div class="flex items-center justify-between gap-4">...</div>
+
+<!-- Grid -->
+<div class="grid grid-cols-3 gap-6">...</div>
+
+<!-- Grid Auto -->
+<div class="grid grid-cols-auto gap-4">...</div>
+*/
+
+/* ==================== ANIMATIONS ==================== */
+/*
+<div class="animate-fade-in">Fade in</div>
+<div class="animate-slide-up">Slide up</div>
+<div class="animate-scale-in">Scale in</div>
+<div class="animate-pulse">Pulse</div>
+<div class="animate-bounce">Bounce</div>
+
+<!-- With Delay -->
+<div class="animate-slide-up delay-100">Delayed</div>
+<div class="animate-slide-up delay-200">More delayed</div>
+*/
+
+/* ==================== HOVER EFFECTS ==================== */
+/*
+<div class="hover-grow">Grows on hover</div>
+<div class="hover-float">Floats up</div>
+<div class="hover-rotate">Rotates</div>
+<div class="hover-glow">Glows</div>
+<a class="hover-underline-animated">Underline animation</a>
+*/
+
+/* ==================== UTILITIES ==================== */
+/*
+Spacing: .p-4 .px-6 .py-3 .m-auto .mx-auto
+Text: .text-center .text-lg .text-xl .font-bold
+Borders: .rounded-lg .rounded-xl .rounded-full
+Display: .flex .grid .hidden .block
+Position: .relative .absolute .fixed
+Width: .w-full
+*/
+
+/* ==================== RESPONSIVE ==================== */
+/*
+<div class="mobile-hidden">Desktop only</div>
+<div class="desktop-hidden">Mobile only</div>
+*/
+
+/* ==================== CSS VARIABLES ==================== */
+/*
+Colors:
+  --primary: #0084ff
+  --secondary: #ff6b9d
+  --success: #10b981
+  --danger: #ef4444
+  --warning: #f59e0b
+  --info: #06b6d4
+
+Gradients:
+  --gradient-primary
+  --gradient-rainbow
+  --gradient-sunset
+  --gradient-ocean
+  --gradient-fire
+  --gradient-cosmic
+
+Usage:
+  style="background: var(--gradient-sunset)"
+  style="color: var(--primary)"
+*/
+
+/* ==================== PRO COMBINATIONS ==================== */
+/*
+<!-- Feature Card -->
+<div class="card-modern card-hover-lift animate-fade-in">
+    <div class="text-4xl text-center">🚀</div>
+    <h3 class="text-xl font-bold text-center">Fast</h3>
+    <p class="text-center">Lightning speed</p>
+    <span class="badge-modern badge-gradient">New</span>
+</div>
+
+<!-- CTA Button -->
+<button class="btn-modern btn-gradient-primary hover-grow animate-pulse">
+    Get Started →
+</button>
+
+<!-- Loading State -->
+<div class="flex items-center gap-3">
+    <div class="loader-spinner"></div>
+    <span class="text-gradient-primary">Loading...</span>
+</div>
+
+<!-- Dashboard Stat -->
+<div class="card-gradient">
+    <h3 class="text-sm">Total Users</h3>
+    <p class="text-3xl font-bold">12,543</p>
+    <div class="progress-modern" style="margin-top: 1rem;">
+        <div class="progress-bar-modern" style="width: 75%;"></div>
+    </div>
+</div>
+
+<!-- Profile Badge -->
+<div class="flex items-center gap-3 card-glass p-4">
+    <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--gradient-primary);"></div>
+    <div>
+        <h4 class="font-bold">John Doe</h4>
+        <span class="badge-modern badge-glow">Pro</span>
+    </div>
+</div>
+*/

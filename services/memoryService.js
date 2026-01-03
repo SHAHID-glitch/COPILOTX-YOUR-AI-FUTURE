@@ -545,37 +545,87 @@ class MemoryService {
         try {
             const memory = await this.getUserMemory(userId);
             
+            // Check if memories were recently cleared (within last 24 hours) - skip personalization
+            if (memory.lastCleared) {
+                const clearTime = new Date(memory.lastCleared);
+                const now = new Date();
+                const hoursSinceCleared = (now - clearTime) / (1000 * 60 * 60);
+                
+                // If cleared within last 24 hours, don't use ANY personalization
+                if (hoursSinceCleared < 24) {
+                    console.log(`🔄 Memories cleared ${hoursSinceCleared.toFixed(1)} hours ago - using generic AI responses`);
+                    return {
+                        contextText: '',
+                        preferences: {},
+                        recentConversations: [],
+                        predictions: {}
+                    };
+                }
+            }
+            
+            // Check if memories have been cleared - if all main fields are empty, return empty context
+            const hasTopicInterests = memory.preferences.topicInterests && memory.preferences.topicInterests.length > 0;
+            const hasRecentConversations = memory.recentContext.recentConversations && memory.recentContext.recentConversations.length > 0;
+            const hasActiveTopics = memory.recentContext.activeTopics && memory.recentContext.activeTopics.length > 0;
+            const hasCommunicationStyle = memory.preferences.communicationStyle && 
+                (memory.preferences.communicationStyle.preferredTone || memory.preferences.communicationStyle.preferredLength);
+            
+            // DEBUG: Log memory state
+            console.log('🧠 Memory state check:', {
+                hasTopicInterests,
+                hasRecentConversations,
+                hasActiveTopics,
+                hasCommunicationStyle,
+                topicCount: memory.preferences.topicInterests?.length || 0,
+                lastCleared: memory.lastCleared
+            });
+            
+            // If no memories exist, return empty context (treat as new user)
+            if (!hasTopicInterests && !hasRecentConversations && !hasActiveTopics && !hasCommunicationStyle) {
+                console.log('🔄 No user memories found - using generic AI responses');
+                return {
+                    contextText: '',
+                    preferences: {},
+                    recentConversations: [],
+                    predictions: {}
+                };
+            }
+            
             // Build context string
             let context = '';
             
             // Add user preferences
-            if (memory.preferences.communicationStyle) {
+            if (hasCommunicationStyle) {
                 const style = memory.preferences.communicationStyle;
-                context += `User prefers ${style.preferredTone} tone, ${style.preferredLength} responses. `;
+                if (style.preferredTone && style.preferredLength) {
+                    context += `User prefers ${style.preferredTone} tone, ${style.preferredLength} responses. `;
+                }
             }
             
             // Add topic interests
-            const topInterests = memory.preferences.topicInterests
-                ?.sort((a, b) => b.frequency - a.frequency)
-                .slice(0, 5)
-                .map(t => t.topic);
-            
-            if (topInterests && topInterests.length > 0) {
+            if (hasTopicInterests) {
+                const topInterests = memory.preferences.topicInterests
+                    .sort((a, b) => b.frequency - a.frequency)
+                    .slice(0, 5)
+                    .map(t => t.topic);
+                
                 context += `User frequently discusses: ${topInterests.join(', ')}. `;
             }
             
             // Add recent context
-            const recentTopics = memory.recentContext.recentConversations
-                ?.slice(-3)
-                .flatMap(c => c.topics)
-                .filter((t, i, arr) => arr.indexOf(t) === i); // unique
-            
-            if (recentTopics && recentTopics.length > 0) {
-                context += `Recent topics: ${recentTopics.join(', ')}. `;
+            if (hasRecentConversations) {
+                const recentTopics = memory.recentContext.recentConversations
+                    .slice(-3)
+                    .flatMap(c => c.topics)
+                    .filter((t, i, arr) => arr.indexOf(t) === i); // unique
+                
+                if (recentTopics.length > 0) {
+                    context += `Recent topics: ${recentTopics.join(', ')}. `;
+                }
             }
             
             // Add active projects
-            if (memory.recentContext.activeTopics && memory.recentContext.activeTopics.length > 0) {
+            if (hasActiveTopics) {
                 const activeProjects = memory.recentContext.activeTopics
                     .map(t => t.topic)
                     .join(', ');

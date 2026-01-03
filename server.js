@@ -29,7 +29,18 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('.'));
+
+// Static files with cache control to prevent aggressive caching
+app.use(express.static('.', {
+    setHeaders: (res, path) => {
+        // Prevent caching for HTML, CSS, and JS files
+        if (path.endsWith('.html') || path.endsWith('.css') || path.endsWith('.js')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+    }
+}));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Session middleware (required for passport)
@@ -80,9 +91,9 @@ function formatTimestamp() {
 }
 
 // Generate AI response using real AI service
-async function generateAIResponse(message, conversationHistory = [], responseType = 'balanced', userId = null, conversationId = null) {
+async function generateAIResponse(message, conversationHistory = [], responseType = 'balanced', userId = null, conversationId = null, emojiUsage = 'default') {
     try {
-        const response = await aiService.generateResponse(message, conversationHistory, responseType, userId, conversationId);
+        const response = await aiService.generateResponse(message, conversationHistory, responseType, userId, conversationId, emojiUsage);
         return response; // Returns { content, metadata }
     } catch (error) {
         console.error('Error generating AI response:', error);
@@ -480,7 +491,7 @@ app.delete('/api/conversations/clear/all', async (req, res) => {
 // Send message and get AI response
 app.post('/api/messages', async (req, res) => {
     try {
-        const { conversationId, content, responseType } = req.body;
+        const { conversationId, content, responseType, emojiUsage } = req.body;
         const userId = req.headers['user-id'];
         
         if (!conversationId || !content) {
@@ -535,7 +546,7 @@ app.post('/api/messages', async (req, res) => {
             .lean();
         
         // Generate AI response with context (includes attachment memory)
-        const aiResponse = await generateAIResponse(content, conversationMessages, responseType, userId, conversationId);
+        const aiResponse = await generateAIResponse(content, conversationMessages, responseType, userId, conversationId, emojiUsage || 'default');
         
         const aiMessage = new Message({
             conversationId: new mongoose.Types.ObjectId(conversationId),

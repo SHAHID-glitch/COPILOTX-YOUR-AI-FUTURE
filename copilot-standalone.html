@@ -3,39 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CopilotX - Your AI Future</title>
+    
+    <!-- SEO Meta Tags -->
+    <title>CopilotX - Your AI Future | Advanced AI Assistant</title>
+    <meta name="description" content="Experience the future of AI with CopilotX. Create images, generate content, chat with advanced AI, create podcasts, and more. Your intelligent AI companion for productivity and creativity.">
+    <meta name="keywords" content="AI assistant, chatbot, image generation, AI chat, productivity, artificial intelligence, CopilotX, AI tools, voice assistant, podcast creator">
+    <meta name="author" content="Shahid Malik">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#2ea043">
+    
+    <!-- Prevent Browser Caching -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://copilotx.app/">
+    <meta property="og:title" content="CopilotX - Your AI Future">
+    <meta property="og:description" content="Advanced AI assistant for creating images, generating content, podcasts, and more. Experience intelligent conversation with CopilotX.">
+    <meta property="og:image" content="https://copilotx.app/og-image.png">
+    <meta property="og:site_name" content="CopilotX">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://copilotx.app/">
+    <meta name="twitter:title" content="CopilotX - Your AI Future">
+    <meta name="twitter:description" content="Advanced AI assistant for creating images, generating content, podcasts, and more.">
+    <meta name="twitter:image" content="https://copilotx.app/twitter-card.png">
+    <meta name="twitter:creator" content="@copilotx">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CopilotX">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Icons -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232ea043'/><g transform='translate(25,35)'><circle cx='12.5' cy='15' r='12' fill='none' stroke='white' stroke-width='4' transform='rotate(45 12.5 15)'/><circle cx='37.5' cy='15' r='12' fill='none' stroke='white' stroke-width='4' transform='rotate(-45 37.5 15)'/><rect x='22' y='12' width='6' height='6' fill='white' transform='rotate(45 25 15)'/></g></svg>">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <!-- Preconnect & Preload for Performance -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    
+    <!-- Stylesheets -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- <link rel="stylesheet" href="https://cdn.tailwindcss.com"> -->
+    <link rel="stylesheet" href="style-enhanced.css">
+    <link rel="stylesheet" href="style-responsive-enhanced.css">
+    <link rel="stylesheet" href="style-animations.css">
+    <link rel="stylesheet" href="style-mobile.css">
+    <link rel="stylesheet" href="style-mobile-enhanced.css">
+    <link rel="stylesheet" href="memory-management.css">
+    <!-- Cache Buster - MUST load first -->
+    <script src="cache-buster.js"></script>
+    <!-- Scripts -->
+    <script src="css-helpers.js"></script>
+    <script src="memory-ui.js"></script>
+ 
     
+    <!-- Schema.org JSON-LD for Rich Snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "CopilotX",
+      "description": "Advanced AI assistant for creating images, generating content, podcasts, and intelligent conversation.",
+      "applicationCategory": "Productivity",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Shahid Malik"
+      }
+    }
+    </script>
 </head>
 <body class="dark-theme">
-    <!-- Voice Listening Modal -->
-    <div class="voice-modal" id="voiceModal">
-        <div class="voice-modal-content">
-            <div class="voice-listening-text">I'm listening</div>
-            <div class="voice-controls">
-                <button class="voice-control-btn" onclick="closeVoiceModal()" title="Close">
+    <!-- Keyboard Shortcuts Panel -->
+    <div class="settings-modal-overlay" id="keyboardShortcutsPanel" style="display: none;">
+        <div class="settings-modal" style="max-width: 600px;">
+            <div class="settings-modal-header">
+                <h2><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h2>
+                <button class="settings-modal-close" onclick="closeKeyboardShortcuts()" aria-label="Close keyboard shortcuts panel">
                     <i class="fas fa-times"></i>
                 </button>
-                <button class="voice-control-btn voice-mic-btn" onclick="toggleVoiceRecording()" title="Recording">
-                    <i class="fas fa-microphone"></i>
+            </div>
+            
+            <div class="settings-modal-body">
+                <div class="settings-section">
+                    <div class="settings-section-title">
+                        <i class="fas fa-comment"></i>
+                        Chat Controls
+                    </div>
+                    
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">Send message</span>
+                        <kbd class="keyboard-key">Enter</kbd>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">New line in message</span>
+                        <div><kbd class="keyboard-key">Shift</kbd> + <kbd class="keyboard-key">Enter</kbd></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">New chat</span>
+                        <div><kbd class="keyboard-key">Ctrl</kbd> + <kbd class="keyboard-key">Shift</kbd> + <kbd class="keyboard-key">O</kbd></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">Focus input</span>
+                        <kbd class="keyboard-key">/</kbd>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-title">
+                        <i class="fas fa-microphone"></i>
+                        Voice & Audio
+                    </div>
+                    
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">Toggle voice mode</span>
+                        <div><kbd class="keyboard-key">Ctrl</kbd> + <kbd class="keyboard-key">Shift</kbd> + <kbd class="keyboard-key">V</kbd></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">Toggle voice assistant</span>
+                        <div><kbd class="keyboard-key">Ctrl</kbd> + <kbd class="keyboard-key">Shift</kbd> + <kbd class="keyboard-key">A</kbd></div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-title">
+                        <i class="fas fa-sliders"></i>
+                        General
+                    </div>
+                    
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">Open settings</span>
+                        <div><kbd class="keyboard-key">Ctrl</kbd> + <kbd class="keyboard-key">,</kbd></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">Toggle theme</span>
+                        <div><kbd class="keyboard-key">Ctrl</kbd> + <kbd class="keyboard-key">M</kbd></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">Toggle sidebar</span>
+                        <div><kbd class="keyboard-key">Ctrl</kbd> + <kbd class="keyboard-key">B</kbd></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">Show shortcuts</span>
+                        <div><kbd class="keyboard-key">Ctrl</kbd> + <kbd class="keyboard-key">/</kbd></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">Search conversations</span>
+                        <div><kbd class="keyboard-key">Ctrl</kbd> + <kbd class="keyboard-key">K</kbd></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-description">Hard refresh (clear cache)</span>
+                        <div><kbd class="keyboard-key">Ctrl</kbd> + <kbd class="keyboard-key">Shift</kbd> + <kbd class="keyboard-key">R</kbd></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-footer">
+                <button class="settings-button" onclick="closeKeyboardShortcuts()">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Chat Modal -->
+    <div class="settings-modal-overlay" id="exportChatModal" style="display: none;">
+        <div class="settings-modal" style="max-width: 500px;">
+            <div class="settings-modal-header">
+                <h2><i class="fas fa-download"></i> Export Chat</h2>
+                <button class="settings-modal-close" onclick="closeExportChat()" aria-label="Close export chat modal">
+                    <i class="fas fa-times"></i>
                 </button>
-                <button class="voice-control-btn" onclick="openVoiceSettings()" title="Settings">
-                    <i class="fas fa-cog"></i>
+            </div>
+            
+            <div class="settings-modal-body">
+                <div class="settings-section">
+                    <div class="settings-section-title">
+                        <i class="fas fa-file-export"></i>
+                        Choose Export Format
+                    </div>
+                    
+                    <button class="settings-button" onclick="exportChat('txt')" style="width: 100%; margin-bottom: 12px;">
+                        <i class="fas fa-file-alt"></i> Export as Text (.txt)
+                    </button>
+                    <button class="settings-button" onclick="exportChat('json')" style="width: 100%; margin-bottom: 12px;">
+                        <i class="fas fa-file-code"></i> Export as JSON (.json)
+                    </button>
+                    <button class="settings-button" onclick="exportChat('md')" style="width: 100%; margin-bottom: 12px;">
+                        <i class="fas fa-file-lines"></i> Export as Markdown (.md)
+                    </button>
+                    <button class="settings-button" onclick="exportChat('html')" style="width: 100%;">
+                        <i class="fas fa-file-code"></i> Export as HTML (.html)
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-footer">
+                <button class="settings-button secondary" onclick="closeExportChat()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Listening Modal -->
+    <div class="voice-modal" id="voiceModal" role="dialog" aria-labelledby="voiceModalTitle" aria-modal="true">
+        <div class="voice-modal-content">
+            <div class="voice-listening-text" id="voiceModalTitle">I'm listening</div>
+            <div class="voice-controls">
+                <button class="voice-control-btn" onclick="closeVoiceModal()" title="Close" aria-label="Close voice modal">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+                <button class="voice-control-btn voice-mic-btn" onclick="toggleVoiceRecording()" title="Recording" aria-label="Toggle voice recording" aria-pressed="false">
+                    <i class="fas fa-microphone" aria-hidden="true"></i>
+                </button>
+                <button class="voice-control-btn" onclick="openVoiceSettings()" title="Settings" aria-label="Open voice settings">
+                    <i class="fas fa-cog" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Settings Modal -->
-    <div class="settings-modal-overlay" id="settingsModal">
+    <div class="settings-modal-overlay" id="settingsModal" role="dialog" aria-labelledby="settingsModalTitle" aria-modal="true">
         <div class="settings-modal">
             <div class="settings-modal-header">
-                <h2><i class="fas fa-gear"></i> Settings</h2>
-                <button class="settings-modal-close" onclick="closeSettingsModal()">
-                    <i class="fas fa-times"></i>
+                <h2 id="settingsModalTitle"><i class="fas fa-gear" aria-hidden="true"></i> Settings</h2>
+                <button class="settings-modal-close" onclick="closeSettingsModal()" aria-label="Close settings modal">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
             
@@ -133,6 +338,18 @@
 
                     <div class="settings-item">
                         <div class="settings-item-info">
+                            <div class="settings-item-label">Emoji</div>
+                            <div class="settings-item-description">Use emoji in AI responses</div>
+                        </div>
+                        <select class="settings-select" id="emojiUsageSelect" onchange="changeEmojiUsage(this.value)">
+                            <option value="less">Less</option>
+                            <option value="default" selected>Default</option>
+                            <option value="more">More</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
                             <div class="settings-item-label">Auto-scroll to Latest Message</div>
                             <div class="settings-item-description">Automatically scroll to new messages</div>
                         </div>
@@ -174,9 +391,29 @@
                     <div class="settings-item">
                         <div class="settings-item-info">
                             <div class="settings-item-label">Analytics & Improvements</div>
-                            <div class="settings-item-description">Help improve Copilot with usage data</div>
+                            <div class="settings-item-description">Help improve CopilotX with usage data</div>
                         </div>
                         <div class="settings-toggle active" id="analyticsToggle" onclick="toggleSetting('analytics', this)"></div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <div class="settings-item-label">AI Memory Management</div>
+                            <div class="settings-item-description">Manage what AI remembers about you</div>
+                        </div>
+                        <button class="settings-btn" onclick="showMemoryManagement()">
+                            <i class="fas fa-brain"></i> Manage
+                        </button>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <div class="settings-item-label">Clear AI Memories</div>
+                            <div class="settings-item-description">Delete all memories so AI forgets everything about you</div>
+                        </div>
+                        <button class="settings-btn settings-btn-danger" onclick="clearAIMemoriesFromSettings(event)">
+                            <i class="fas fa-trash-alt"></i> Clear All
+                        </button>
                     </div>
                 </div>
 
@@ -256,6 +493,18 @@
                             <div class="settings-item-label">Member Since</div>
                             <div class="settings-item-description" id="memberSince">Loading...</div>
                         </div>
+                    </div>
+
+                    <div class="settings-divider"></div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <div class="settings-item-label">Sign Out</div>
+                            <div class="settings-item-description">Sign out of your account</div>
+                        </div>
+                        <button class="settings-btn" onclick="signOut()">
+                            <i class="fas fa-sign-out-alt"></i> Sign Out
+                        </button>
                     </div>
 
                     <div class="settings-divider"></div>
@@ -573,7 +822,7 @@
     <div class="auth-modal-overlay" id="authModal">
         <div class="auth-modal">
             <div class="auth-modal-header">
-                <h2 style="margin: 0; color: var(--text-primary);">Welcome to Copilot</h2>
+                <h2 style="margin: 0; color: var(--text-primary);">Welcome to CopilotX</h2>
                 <button class="auth-modal-close" onclick="closeAuthModal()">
                     <i class="fas fa-times"></i>
                 </button>
@@ -720,17 +969,26 @@
                     <span>New chat</span>
                     <span class="keyboard-shortcut">Ctrl+Shift+O</span>
                 </button>
-                <div class="nav-item active" onclick="navigateTo('discover')" title="Discover"> 
-                    <i class="fas fa-compass"></i>
+                <button class="nav-item" onclick="openExportChat()" title="Export chat">
+                    <i class="fas fa-download"></i>
+                    <span>Export chat</span>
+                </button>
+                <button class="nav-item" onclick="openKeyboardShortcuts()" title="Keyboard shortcuts">
+                    <i class="fas fa-keyboard"></i>
+                    <span>Shortcuts</span>
+                    <span class="keyboard-shortcut">Ctrl+/</span>
+                </button>
+                <div class="nav-item active" onclick="navigateTo('discover')" title="Discover" role="button" tabindex="0"> 
+                    <i class="fas fa-compass" aria-hidden="true"></i>
                     <span>Discover</span>
                 </div>
-                <!-- <div class="nav-item" onclick="navigateTo('imagine')"title="Imagine">
-                    <i class="fas fa-wand-magic-sparkles"></i>
+                <!-- <div class="nav-item" onclick="navigateTo('imagine')"title="Imagine" role="button" tabindex="0">
+                    <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
                     <span>Imagine</span> -->
                     <!-- <span class="badge">New</span> -->
                 <!-- </div> -->
-                <div class="nav-item" onclick="navigateTo('library')"title="Library">
-                    <i class="fas fa-book"></i>
+                <div class="nav-item" onclick="navigateTo('library')" title="Library" role="button" tabindex="0" aria-label="Navigate to library">
+                    <i class="fas fa-book" aria-hidden="true"></i>
                     <span>Library</span>
                 </div>
                 <!-- <div class="nav-item" onclick="navigateTo('labs')"title="Labs">
@@ -1014,16 +1272,16 @@
                         <input type="file" id="photoInput" style="display: none;" multiple accept="image/*">
                         
                         <div class="input-area">
-                            <button class="input-action more-btn" onclick="toggleChatMoreOptions()" title="More options">
-                                <i class="fas fa-plus"></i>
+                            <button class="input-action more-btn" onclick="toggleChatMoreOptions()" title="More options" aria-label="Show more options" aria-expanded="false">
+                                <i class="fas fa-plus" aria-hidden="true"></i>
                             </button>
                             <textarea 
                                 rows="1"
                                 class="chat-input" 
                                 placeholder="Ask anything" 
                                 id="chatInput"
-                                onkeydown="handleKeyPress(event)"
-                                oninput="updateCharCounter()"
+                                aria-label="Chat input"
+                                aria-describedby="charCounter"
                             ></textarea>
                             <div class="input-right">
                                 <!-- <button class="input-action attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach files (PDF, DOCX, images)">
@@ -1032,12 +1290,12 @@
                                 <button class="input-action voice-btn" onclick="toggleVoiceMode()" title="Voice mode - Live transcription">
                                     <i class="fas fa-microphone"></i>
                                 </button>
-                                <button class="input-action transcribe-btn" onclick="transcribeAudioFile()" title="Upload audio to transcribe">
+                                <!-- <button class="input-action transcribe-btn" onclick="transcribeAudioFile()" title="Upload audio to transcribe">
                                     <i class="fas fa-file-audio"></i>
-                                </button>
+                                </button> -->
                                 <button class="input-action audio-btn voice-assistant-btn" onclick="toggleAudio()" title="AI voice assistant">
                                     <svg class="voice-bubble-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"/>
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
                                         <g class="sound-waves">
                                             <line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                                             <line x1="10" y1="9" x2="10" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -1045,6 +1303,9 @@
                                         </g>
                                     </svg>
                                     <!-- <span class="voice-assistant-label">AI voice assistant</span> -->
+                                </button>
+                                <button class="input-action newline-btn" onclick="insertNewLine()" title="New line (or press Enter on mobile)">
+                                    <i class="fas fa-level-down-alt"></i>
                                 </button>
                                 <button class="input-action send-btn" onclick="sendMessage()" title="Send message">
                                     <i class="fas fa-paper-plane"></i>
@@ -1130,11 +1391,236 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <script src="first.js"></script>
+    <!-- External Libraries - Loaded with defer for better performance -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" defer></script>
+    
+    <!-- Main Application Script -->
+    <script src="first.js" defer></script>
+    
+    <!-- Service Worker Registration for PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('ServiceWorker registered:', registration.scope))
+                    .catch(err => console.log('ServiceWorker registration failed:', err));
+            });
+        }
+    </script>
+    
+    <!-- Keyboard Shortcuts Handler -->
+    <script>
+        // Global keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + / - Show keyboard shortcuts
+            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                e.preventDefault();
+                openKeyboardShortcuts();
+            }
+            // Ctrl/Cmd + K - Search conversations
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('searchInput')?.focus();
+            }
+            // Ctrl/Cmd + B - Toggle sidebar
+            // if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+            //     e.preventDefault();
+            //     toggleSidebar();
+            // }
+            // Ctrl/Cmd + , - Open settings
+            if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+                e.preventDefault();
+                openSettingsModal();
+            }
+            // Ctrl/Cmd + M - Toggle theme
+            if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+                e.preventDefault();
+                toggleTheme();
+            }
+            // Ctrl/Cmd + Shift + V - Toggle voice
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
+                e.preventDefault();
+                toggleVoiceMode();
+            }
+            // Ctrl/Cmd + Shift + A - Toggle voice assistant
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'A') {
+                e.preventDefault();
+                toggleAudio();
+            }
+            // / - Focus input (when not already focused)
+            if (e.key === '/' && document.activeElement !== document.getElementById('chatInput')) {
+                e.preventDefault();
+                document.getElementById('chatInput')?.focus();
+            }
+            // Escape - Close modals
+            if (e.key === 'Escape') {
+                closeAllModals();
+            }
+        });
+        
+        function openKeyboardShortcuts() {
+            document.getElementById('keyboardShortcutsPanel').style.display = 'flex';
+        }
+        
+        function closeKeyboardShortcuts() {
+            document.getElementById('keyboardShortcutsPanel').style.display = 'none';
+        }
+        
+        function openExportChat() {
+            document.getElementById('exportChatModal').style.display = 'flex';
+        }
+        
+        function closeExportChat() {
+            document.getElementById('exportChatModal').style.display = 'none';
+        }
+        
+        function exportChat(format) {
+            const messages = document.querySelectorAll('.message');
+            let content = '';
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            
+            if (format === 'txt') {
+                messages.forEach(msg => {
+                    const role = msg.classList.contains('user-message') ? 'User' : 'Assistant';
+                    const text = msg.querySelector('.message-text')?.textContent || '';
+                    content += `${role}: ${text}\n\n`;
+                });
+                downloadFile(`chat-export-${timestamp}.txt`, content, 'text/plain');
+            } else if (format === 'json') {
+                const chatData = [];
+                messages.forEach(msg => {
+                    chatData.push({
+                        role: msg.classList.contains('user-message') ? 'user' : 'assistant',
+                        content: msg.querySelector('.message-text')?.textContent || '',
+                        timestamp: msg.dataset.timestamp || new Date().toISOString()
+                    });
+                });
+                content = JSON.stringify({ messages: chatData, exported: new Date().toISOString() }, null, 2);
+                downloadFile(`chat-export-${timestamp}.json`, content, 'application/json');
+            } else if (format === 'md') {
+                content = '# Chat Export\n\n';
+                content += `*Exported: ${new Date().toLocaleString()}*\n\n---\n\n`;
+                messages.forEach(msg => {
+                    const role = msg.classList.contains('user-message') ? '**User**' : '**Assistant**';
+                    const text = msg.querySelector('.message-text')?.textContent || '';
+                    content += `${role}\n\n${text}\n\n---\n\n`;
+                });
+                downloadFile(`chat-export-${timestamp}.md`, content, 'text/markdown');
+            } else if (format === 'html') {
+                content = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Export</title>
+    <style>
+        body { font-family: Inter, system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f5f5f5; }
+        .message { background: white; padding: 20px; margin: 20px 0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .user { border-left: 4px solid #2ea043; }
+        .assistant { border-left: 4px solid #0969da; }
+        .role { font-weight: 600; margin-bottom: 10px; }
+        .header { text-align: center; margin-bottom: 40px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Chat Export</h1>
+        <p>Exported: ${new Date().toLocaleString()}</p>
+    </div>
+`;
+                messages.forEach(msg => {
+                    const isUser = msg.classList.contains('user-message');
+                    const text = msg.querySelector('.message-text')?.textContent || '';
+                    content += `    <div class="message ${isUser ? 'user' : 'assistant'}">
+        <div class="role">${isUser ? 'User' : 'Assistant'}</div>
+        <div>${text}</div>
+    </div>\n`;
+                });
+                content += `</body>
+</html>`;
+                downloadFile(`chat-export-${timestamp}.html`, content, 'text/html');
+            }
+            
+            closeExportChat();
+        }
+        
+        function downloadFile(filename, content, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function closeAllModals() {
+            document.getElementById('settingsModal')?.classList.remove('active');
+            document.getElementById('authModal')?.classList.remove('active');
+            document.getElementById('voiceModal')?.classList.remove('active');
+            document.getElementById('keyboardShortcutsPanel').style.display = 'none';
+            document.getElementById('exportChatModal').style.display = 'none';
+            document.getElementById('videoModal')?.classList.remove('active');
+            document.getElementById('podcastModal')?.classList.remove('active');
+        }
+    </script>
+    
+    <!-- Add custom styles for shortcuts -->
+    <style>
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .shortcut-item:last-child {
+            border-bottom: none;
+        }
+        .shortcut-description {
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        .keyboard-key {
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--text-primary);
+            box-shadow: 0 2px 0 var(--border-color);
+            display: inline-block;
+            min-width: 24px;
+            text-align: center;
+        }
+        
+        /* Focus visible styles for better keyboard navigation */
+        *:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+        
+        /* Skip to main content link for screen readers */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: white;
+            padding:  8px;
+            text-decoration: none;
+            z-index: 100;
+        }
+        .skip-link:focus {
+            top: 0;
+        }
+    </style>
 </body>
 </html>

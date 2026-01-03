@@ -1,0 +1,817 @@
+/* ==================== ADVANCED ANIMATIONS & MODERN EFFECTS ==================== */
+/* Ultra-Modern CSS Enhancements for CopilotX */
+/* Includes: Advanced Animations, 3D Effects, Particle Effects, Glassmorphism, Neumorphism */
+
+/* ==================== SMOOTH ENTRANCE ANIMATIONS ==================== */
+@keyframes smoothFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes smoothSlideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes smoothSlideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes smoothSlideInTop {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes smoothSlideInBottom {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.95);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes rotateIn {
+    from {
+        opacity: 0;
+        transform: rotate(-180deg) scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: rotate(0deg) scale(1);
+    }
+}
+
+@keyframes flipIn {
+    from {
+        opacity: 0;
+        transform: perspective(400px) rotateX(-90deg);
+    }
+    to {
+        opacity: 1;
+        transform: perspective(400px) rotateX(0deg);
+    }
+}
+
+/* ==================== HOVER EFFECTS ==================== */
+@keyframes hoverFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes hoverPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes hoverGlow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(0, 132, 255, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(0, 132, 255, 0.6), 0 0 30px rgba(0, 132, 255, 0.4);
+    }
+}
+
+/* ==================== LOADING ANIMATIONS ==================== */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+}
+
+@keyframes dotPulse {
+    0%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+@keyframes wave {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* ==================== ATTENTION SEEKERS ==================== */
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-5px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(5px);
+    }
+}
+
+@keyframes heartbeat {
+    0%, 100% {
+        transform: scale(1);
+    }
+    10%, 30% {
+        transform: scale(0.9);
+    }
+    20%, 40% {
+        transform: scale(1.1);
+    }
+}
+
+@keyframes wiggle {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-5deg);
+    }
+    75% {
+        transform: rotate(5deg);
+    }
+}
+
+/* ==================== GRADIENT ANIMATIONS ==================== */
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes rainbowGlow {
+    0% {
+        filter: hue-rotate(0deg);
+    }
+    100% {
+        filter: hue-rotate(360deg);
+    }
+}
+
+/* ==================== UTILITY ANIMATION CLASSES ==================== */
+.animate-fade-in {
+    animation: smoothFadeIn 0.4s ease-out;
+}
+
+.animate-slide-in-right {
+    animation: smoothSlideInRight 0.4s ease-out;
+}
+
+.animate-slide-in-left {
+    animation: smoothSlideInLeft 0.4s ease-out;
+}
+
+.animate-slide-in-top {
+    animation: smoothSlideInTop 0.4s ease-out;
+}
+
+.animate-slide-in-bottom {
+    animation: smoothSlideInBottom 0.4s ease-out;
+}
+
+.animate-zoom-in {
+    animation: zoomIn 0.4s ease-out;
+}
+
+.animate-bounce-in {
+    animation: bounceIn 0.6s ease-out;
+}
+
+.animate-rotate-in {
+    animation: rotateIn 0.5s ease-out;
+}
+
+.animate-flip-in {
+    animation: flipIn 0.6s ease-out;
+}
+
+/* Hover animations */
+.hover-float:hover {
+    animation: hoverFloat 1s ease-in-out infinite;
+}
+
+.hover-pulse:hover {
+    animation: hoverPulse 1s ease-in-out infinite;
+}
+
+.hover-glow:hover {
+    animation: hoverGlow 1.5s ease-in-out infinite;
+}
+
+/* Loading animations */
+.loading-spin {
+    animation: spin 1s linear infinite;
+}
+
+.loading-pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading-shimmer {
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+}
+
+/* Attention seekers */
+.animate-shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+.animate-heartbeat {
+    animation: heartbeat 1s ease-in-out infinite;
+}
+
+.animate-wiggle {
+    animation: wiggle 0.5s ease-in-out;
+}
+
+/* ==================== ADVANCED GLASSMORPHISM ==================== */
+.glass-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 
+        0 12px 48px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.glass-button {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 12px 24px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.glass-button:active {
+    transform: translateY(0);
+}
+
+/* ==================== NEUMORPHISM ==================== */
+.neu-card {
+    background: var(--bg-primary);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 
+        12px 12px 24px rgba(0, 0, 0, 0.15),
+        -12px -12px 24px rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.neu-card:hover {
+    box-shadow: 
+        16px 16px 32px rgba(0, 0, 0, 0.2),
+        -16px -16px 32px rgba(255, 255, 255, 0.07);
+}
+
+.neu-button {
+    background: var(--bg-primary);
+    border: none;
+    border-radius: 16px;
+    padding: 14px 28px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 
+        8px 8px 16px rgba(0, 0, 0, 0.15),
+        -8px -8px 16px rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
+}
+
+.neu-button:hover {
+    box-shadow: 
+        6px 6px 12px rgba(0, 0, 0, 0.15),
+        -6px -6px 12px rgba(255, 255, 255, 0.05);
+}
+
+.neu-button:active {
+    box-shadow: 
+        inset 4px 4px 8px rgba(0, 0, 0, 0.15),
+        inset -4px -4px 8px rgba(255, 255, 255, 0.05);
+}
+
+.neu-input {
+    background: var(--bg-primary);
+    border: none;
+    border-radius: 12px;
+    padding: 14px 18px;
+    box-shadow: 
+        inset 4px 4px 8px rgba(0, 0, 0, 0.1),
+        inset -4px -4px 8px rgba(255, 255, 255, 0.03);
+    transition: all 0.2s ease;
+}
+
+.neu-input:focus {
+    outline: none;
+    box-shadow: 
+        inset 6px 6px 12px rgba(0, 0, 0, 0.12),
+        inset -6px -6px 12px rgba(255, 255, 255, 0.04),
+        0 0 0 3px rgba(0, 132, 255, 0.1);
+}
+
+/* ==================== 3D CARD EFFECTS ==================== */
+.card-3d {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-3d:hover {
+    transform: rotateY(5deg) rotateX(5deg) scale(1.02);
+}
+
+.card-3d::before {
+    content: '';
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    right: 5%;
+    bottom: 5%;
+    background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1), transparent);
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.card-3d:hover::before {
+    opacity: 1;
+}
+
+/* ==================== GRADIENT TEXT ==================== */
+.gradient-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% 200%;
+    animation: gradientShift 5s ease infinite;
+}
+
+.gradient-text-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark), var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ==================== ANIMATED BACKGROUNDS ==================== */
+.bg-gradient-animated {
+    background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #4facfe);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+.bg-mesh-gradient {
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(244, 114, 182, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(79, 172, 254, 0.4) 0%, transparent 50%);
+    animation: gradientShift 20s ease infinite;
+}
+
+/* ==================== PARTICLE EFFECT ==================== */
+.particles-container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    animation: particleFloat 10s infinite ease-in-out;
+}
+
+@keyframes particleFloat {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0;
+    }
+    10%, 90% {
+        opacity: 1;
+    }
+    50% {
+        transform: translate(var(--tx, 100px), var(--ty, -100px)) scale(1.5);
+    }
+}
+
+/* ==================== RIPPLE EFFECT ==================== */
+.ripple {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.ripple:active::after {
+    width: 300px;
+    height: 300px;
+}
+
+/* ==================== SCROLL REVEAL ANIMATIONS ==================== */
+.scroll-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.scroll-reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.scroll-reveal-left {
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.scroll-reveal-left.revealed {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.scroll-reveal-right {
+    opacity: 0;
+    transform: translateX(30px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.scroll-reveal-right.revealed {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* ==================== MODERN BUTTONS WITH EFFECTS ==================== */
+.btn-modern-glow {
+    position: relative;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    padding: 14px 32px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 132, 255, 0.3);
+}
+
+.btn-modern-glow::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    transform: rotate(45deg);
+    animation: shimmer 3s infinite;
+}
+
+.btn-modern-glow:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 132, 255, 0.5);
+}
+
+.btn-modern-glow:active {
+    transform: translateY(0);
+}
+
+/* ==================== FLOATING LABELS ==================== */
+.floating-label-group {
+    position: relative;
+    margin-top: 20px;
+}
+
+.floating-label-input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 16px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-primary);
+    transition: all 0.3s ease;
+}
+
+.floating-label-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.floating-label {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-primary);
+    padding: 0 6px;
+    color: var(--text-secondary);
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-label-input:focus ~ .floating-label,
+.floating-label-input:not(:placeholder-shown) ~ .floating-label {
+    top: 0;
+    font-size: 12px;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* ==================== PROGRESS BARS ==================== */
+.progress-modern {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-modern {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar-modern::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: shimmer 2s infinite;
+}
+
+/* ==================== BADGE ANIMATIONS ==================== */
+.badge-pulse {
+    position: relative;
+}
+
+.badge-pulse::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0.3;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ==================== STAGGER ANIMATIONS ==================== */
+.stagger-fade-in > * {
+    animation: smoothFadeIn 0.5s ease-out backwards;
+}
+
+.stagger-fade-in > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-fade-in > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-fade-in > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-fade-in > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-fade-in > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-fade-in > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-fade-in > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-fade-in > *:nth-child(8) { animation-delay: 0.4s; }
+
+/* ==================== PERFORMANCE OPTIMIZATIONS ==================== */
+.gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+.optimize-animation {
+    will-change: transform, opacity;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ==================== CUSTOM SCROLLBAR WITH ANIMATION ==================== */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 10px;
+    transition: background 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+}
+
+/* ==================== TOOLTIP WITH ANIMATION ==================== */
+.tooltip-modern {
+    position: relative;
+}
+
+.tooltip-modern::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+}
+
+.tooltip-modern::after {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tooltip-modern:hover::before,
+.tooltip-modern:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
