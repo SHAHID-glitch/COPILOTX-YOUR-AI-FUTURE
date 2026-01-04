@@ -137,8 +137,8 @@ async function searchDuckDuckGoImages(query, maxResults = 6) {
         const placeholders = [];
         for (let i = 0; i < Math.min(maxResults, 4); i++) {
             placeholders.push({
-                url: `https://via.placeholder.com/400x300/2ea043/ffffff?text=${encodeURIComponent(query)}`,
-                thumbnail: `https://via.placeholder.com/150x150/2ea043/ffffff?text=${encodeURIComponent(query)}`,
+                url: `https://placehold.co/400x300/2ea043/ffffff?text=${encodeURIComponent(query)}`,
+                thumbnail: `https://placehold.co/150x150/2ea043/ffffff?text=${encodeURIComponent(query)}`,
                 title: `${query} (Placeholder ${i + 1})`,
                 source: 'Placeholder',
                 photographer: 'System',

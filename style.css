@@ -5891,9 +5891,28 @@ body.light-theme .sidebar-overlay.active {
     }
 
     /* Hide some input actions to match ChatGPT's cleaner look */
-    .transcribe-btn,
-    .voice-assistant-btn {
+    .transcribe-btn {
         display: none;
+    }
+
+    /* Keep voice assistant button visible on mobile */
+    .voice-assistant-btn,
+    .input-action.audio-btn.voice-assistant-btn {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .voice-assistant-btn .voice-bubble-icon {
+        width: 20px;
+        height: 20px;
+        display: block !important;
     }
 
     /* Show only essential buttons */
@@ -6812,6 +6831,26 @@ body.light-theme .sidebar-overlay.active {
         min-width: 48px;
         min-height: 48px;
         font-size: 18px;
+    }
+
+    /* Keep voice assistant button visible on small mobile */
+    .voice-assistant-btn,
+    .input-action.audio-btn.voice-assistant-btn {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .voice-assistant-btn .voice-bubble-icon {
+        width: 24px;
+        height: 24px;
+        display: block !important;
     }
 
     .input-area {
