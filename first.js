@@ -1983,21 +1983,26 @@ console.log('📝 Copilot script starting...');
             }
         }
 
-        // Chat Functions
+          // Chat Functions
         function handleKeyPress(event) {
             if (event.key === 'Enter') {
                 // Check if device is mobile
                 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
                 
                 if (isMobile) {
-                    // On mobile: Enter adds new line, send button is used to send
-                    // Allow default behavior (new line)
-                } else {
-                    // On desktop: Enter sends, Shift+Enter adds new line
-                    if (!event.shiftKey) {
+                    // On mobile: Ctrl+Enter sends, Enter adds new line
+                    if (event.ctrlKey || event.metaKey) {
                         event.preventDefault();
                         sendMessage();
                     }
+                    // Allow default behavior for new line
+                } else {
+                    // On desktop: Enter adds new line, Ctrl+Enter or Shift+Enter sends
+                    if (event.ctrlKey || event.metaKey || event.shiftKey) {
+                        event.preventDefault();
+                        sendMessage();
+                    }
+                    // Allow default behavior for new line
                 }
             }
         }
