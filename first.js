@@ -6911,9 +6911,57 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
                     })
                 });
 
+                // Check if TTS failed due to Python environment
                 if (!ttsResponse.ok) {
                     const errorData = await ttsResponse.json();
-                    throw new Error(errorData.error || 'Failed to generate podcast audio');
+                    
+                    // If Python environment error, offer browser-based TTS as fallback
+                    if (errorData.error === 'Python environment not found' && 'speechSynthesis' in window) {
+                        console.warn('⚠️ Server TTS not available, using browser speech synthesis as fallback');
+                        
+                        // Use browser's speech synthesis
+                        const useBrowserTTS = confirm(
+                            '⚠️ Server-based podcast generation is not available (Python environment not set up).\n\n' +
+                            'Would you like to use your browser\'s built-in text-to-speech instead?\n\n' +
+                            'Note: Browser TTS cannot be downloaded as an audio file, but you can listen to it.'
+                        );
+                        
+                        if (useBrowserTTS) {
+                            // Use browser speech synthesis
+                            if (window.speechSynthesis) {
+                                speechSynthesis.cancel();
+                                
+                                const utterance = new SpeechSynthesisUtterance(script);
+                                utterance.rate = 0.9;
+                                utterance.pitch = 1.0;
+                                
+                                // Set voice based on selection
+                                const voices = speechSynthesis.getVoices();
+                                if (voices.length > 0) {
+                                    const voiceMap = {
+                                        'male': voices.find(v => v.name.includes('Male') || v.name.includes('David')) || voices[0],
+                                        'female': voices.find(v => v.name.includes('Female') || v.name.includes('Samantha')) || voices[0],
+                                        'default': voices[0]
+                                    };
+                                    utterance.voice = voiceMap[voice] || voices[0];
+                                }
+                                
+                                speechSynthesis.speak(utterance);
+                                
+                                generatingDiv.style.display = 'none';
+                                alert('🔊 Playing podcast using browser text-to-speech.\n\nNote: To download podcasts, please set up the Python environment as described in the setup documentation.');
+                                closePodcastModal();
+                                return;
+                            }
+                        } else {
+                            generatingDiv.style.display = 'none';
+                            alert('❌ Podcast generation cancelled.\n\nTo enable full podcast features, please set up the Python environment:\n' + errorData.instructions);
+                            generateBtn.disabled = false;
+                            return;
+                        }
+                    }
+                    
+                    throw new Error(errorData.error || errorData.message || 'Failed to generate podcast audio');
                 }
 
                 // Get audio blob
@@ -7073,3 +7121,5 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
         window.downloadPodcast = downloadPodcast;
         window.sharePodcast = sharePodcast;
         window.createNewPodcast = createNewPodcast;
+
+        console.log('✅ Copilot script loaded successfully - all functions exposed to window');
