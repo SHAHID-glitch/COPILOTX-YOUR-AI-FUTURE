@@ -5,9 +5,10 @@ const { HfInference } = require('@huggingface/inference');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 const { auth, optionalAuth } = require('../middleware/auth');
 
 // Configure multer for audio uploads
@@ -670,8 +671,8 @@ router.post('/text-to-speech', optionalAuth, async (req, res) => {
         const filename = `podcast_${timestamp}.mp3`;
         const outputPath = path.join(audioDir, filename);
 
-        // Escape text for command line
-        const escapedText = text.replace(/"/g, '\\"').replace(/\n/g, ' ');
+        // Normalize text for TTS
+        const normalizedText = text.replace(/\r?\n/g, ' ').trim();
 
         // Voice mapping (choose from multiple voices)
         const voiceMap = {
@@ -682,50 +683,73 @@ router.post('/text-to-speech', optionalAuth, async (req, res) => {
         };
         const selectedVoice = voiceMap[voice] || voiceMap['default'];
 
-        // Determine edge-tts path
-        const pythonPath = path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe');
-        
-        console.log('🔍 Checking TTS paths...');
-        console.log('python path:', pythonPath);
+        const projectRoot = path.join(__dirname, '..');
+        const pythonCandidates = [
+            process.env.EDGE_TTS_PYTHON,
+            path.join(projectRoot, '.venv', 'Scripts', 'python.exe'),
+            path.join(projectRoot, '.venv', 'bin', 'python'),
+            'python3',
+            'python'
+        ].filter(Boolean);
 
-        // Check if Python is available
-        if (!fs.existsSync(pythonPath)) {
-            console.error('❌ Python not found in virtual environment');
-            return res.status(500).json({ 
-                error: 'Python environment not found',
-                message: 'Please ensure the Python virtual environment is set up correctly',
-                instructions: 'Make sure .venv/Scripts/python.exe exists and edge-tts is installed: pip install edge-tts'
-            });
+        const commandCandidates = [
+            ...pythonCandidates.map(cmd => ({ cmd, baseArgs: ['-m', 'edge_tts'] })),
+            { cmd: process.env.EDGE_TTS_COMMAND || 'edge-tts', baseArgs: [] }
+        ];
+
+        const ratePercent = Number.isFinite(Number(speed))
+            ? Math.round((Number(speed) - 1) * 100)
+            : 0;
+        const rateValue = `${ratePercent >= 0 ? '+' : ''}${ratePercent}%`;
+
+        console.log('🔄 Running Edge TTS command candidates...');
+        const ttsErrors = [];
+        let generated = false;
+
+        for (const candidate of commandCandidates) {
+            const ttsArgs = [
+                ...candidate.baseArgs,
+                '--text', normalizedText,
+                '--write-media', outputPath,
+                '--voice', selectedVoice
+            ];
+
+            if (ratePercent !== 0) {
+                ttsArgs.push('--rate', rateValue);
+            }
+
+            try {
+                const { stdout, stderr } = await execFilePromise(candidate.cmd, ttsArgs, {
+                    timeout: 120000,
+                    maxBuffer: 20 * 1024 * 1024
+                });
+
+                if (stdout) {
+                    console.log(`TTS stdout (${candidate.cmd}):`, stdout.substring(0, 200));
+                }
+                if (stderr) {
+                    console.log(`TTS stderr (${candidate.cmd}):`, stderr.substring(0, 200));
+                }
+
+                generated = fs.existsSync(outputPath);
+                if (generated) {
+                    console.log(`✅ Audio generated using: ${candidate.cmd}`);
+                    break;
+                }
+            } catch (commandError) {
+                const reason = `${candidate.cmd}: ${commandError.message}`;
+                ttsErrors.push(reason);
+                console.warn('⚠️  TTS candidate failed:', reason);
+            }
         }
 
-        // Always use python -m edge_tts (more reliable than .exe launcher)
-        console.log('✅ Using python -m edge_tts for TTS generation');
-
-        // Generate audio using Edge TTS (always use Python module for reliability)
-        const ttsCommand = `"${pythonPath}" -m edge_tts --text "${escapedText}" --write-media "${outputPath}" --voice "${selectedVoice}"`;
-        
-        console.log('🔄 Running TTS command...');
-        console.log('Command:', ttsCommand.substring(0, 100) + '...');
-        
-        try {
-            const { stdout, stderr } = await execPromise(ttsCommand, {
-                timeout: 90000, // 90 second timeout
-                maxBuffer: 20 * 1024 * 1024 // 20MB buffer
+        if (!generated) {
+            return res.status(503).json({
+                error: 'TTS service unavailable',
+                message: 'Edge TTS is not available on this server instance.',
+                details: ttsErrors.slice(0, 3),
+                tip: 'Install edge-tts and ensure python3 is available, or set EDGE_TTS_PYTHON/EDGE_TTS_COMMAND.'
             });
-            
-            if (stdout) {
-                console.log('TTS stdout:', stdout.substring(0, 200));
-            }
-            if (stderr) {
-                console.log('TTS stderr:', stderr.substring(0, 200));
-            }
-            
-            console.log('✅ Audio generation command completed');
-        } catch (execError) {
-            console.error('❌ TTS execution error:', execError.message);
-            console.error('❌ Error code:', execError.code);
-            console.error('❌ stderr:', execError.stderr?.substring(0, 500));
-            throw new Error('TTS generation failed: ' + execError.message);
         }
 
         // Check if file was created

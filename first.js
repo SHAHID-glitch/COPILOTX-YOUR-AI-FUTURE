@@ -6612,7 +6612,7 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
                     },
                     body: JSON.stringify({
                         text: script,
@@ -6621,7 +6621,22 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
                 });
 
                 if (!ttsResponse.ok) {
-                    throw new Error(`Failed to generate audio: ${ttsResponse.statusText}`);
+                    let errorMessage = `Failed to generate audio (${ttsResponse.status})`;
+                    try {
+                        const errorData = await ttsResponse.json();
+                        errorMessage = errorData.error || errorData.message || errorMessage;
+                    } catch (e) {
+                        // Ignore JSON parse errors and keep fallback message
+                    }
+
+                    if (ttsResponse.status === 503) {
+                        loadingMsg.innerHTML = formatTextToHtml(
+                            `⚠️ Podcast script created, but server-side audio is currently unavailable.\n\n📝 **Script Preview:**\n${script.substring(0, 400)}${script.length > 400 ? '...' : ''}`
+                        );
+                        return;
+                    }
+
+                    throw new Error(errorMessage);
                 }
 
                 const audioBlob = await ttsResponse.blob();
@@ -6912,8 +6927,28 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
                 });
 
                 if (!ttsResponse.ok) {
-                    const errorData = await ttsResponse.json();
-                    throw new Error(errorData.error || 'Failed to generate podcast audio');
+                    let errorMessage = 'Failed to generate podcast audio';
+                    try {
+                        const errorData = await ttsResponse.json();
+                        errorMessage = errorData.error || errorData.message || errorMessage;
+                    } catch (e) {
+                        // Ignore JSON parse errors and keep fallback message
+                    }
+
+                    if (ttsResponse.status === 503) {
+                        generatingDiv.style.display = 'none';
+                        previewDiv.style.display = 'block';
+                        document.getElementById('podcastGeneratingText').textContent = '';
+                        const audioElement = document.getElementById('generatedPodcast');
+                        if (audioElement) {
+                            audioElement.removeAttribute('src');
+                            audioElement.load();
+                        }
+                        addMessage('assistant', `⚠️ Podcast script was generated, but audio is currently unavailable on the server.\n\nYou can still copy or edit the script and try again later.`);
+                        return;
+                    }
+
+                    throw new Error(errorMessage);
                 }
 
                 // Get audio blob
