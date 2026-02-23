@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "postinstall": "python3 -m pip install --user edge-tts --quiet || true",
     "dev": "nodemon server.js",
     "copilot": "node start-copilot.js",
     "open-copilot": "node start-copilot.js",
