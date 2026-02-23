@@ -11,6 +11,68 @@ const execPromise = util.promisify(exec);
 const execFilePromise = util.promisify(execFile);
 const { auth, optionalAuth } = require('../middleware/auth');
 
+let edgeTtsChecked = false;
+let edgeTtsAvailable = false;
+
+function getTtsExecEnv() {
+    const env = { ...process.env };
+    if (process.env.HOME) {
+        env.PATH = `${process.env.HOME}/.local/bin:${process.env.PATH || ''}`;
+    }
+    return env;
+}
+
+async function ensureEdgeTtsAvailable() {
+    if (edgeTtsChecked) {
+        return edgeTtsAvailable;
+    }
+
+    edgeTtsChecked = true;
+    const env = getTtsExecEnv();
+
+    try {
+        await execFilePromise('python3', ['-c', 'import edge_tts'], {
+            timeout: 15000,
+            env
+        });
+        edgeTtsAvailable = true;
+        console.log('✅ edge_tts module is available');
+        return true;
+    } catch (checkError) {
+        console.warn('⚠️  edge_tts module missing, attempting automatic install...');
+    }
+
+    const installAttempts = [
+        ['-m', 'pip', 'install', '--user', 'edge-tts'],
+        ['-m', 'pip', 'install', '--user', '--break-system-packages', 'edge-tts']
+    ];
+
+    for (const args of installAttempts) {
+        try {
+            console.log('🔧 Installing edge-tts:', `python3 ${args.join(' ')}`);
+            await execFilePromise('python3', args, {
+                timeout: 240000,
+                maxBuffer: 20 * 1024 * 1024,
+                env
+            });
+
+            await execFilePromise('python3', ['-c', 'import edge_tts'], {
+                timeout: 15000,
+                env
+            });
+
+            edgeTtsAvailable = true;
+            console.log('✅ edge_tts installed successfully');
+            return true;
+        } catch (installError) {
+            console.warn('⚠️  edge_tts install attempt failed:', installError.message);
+        }
+    }
+
+    edgeTtsAvailable = false;
+    return false;
+}
+
 // Configure multer for audio uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -660,6 +722,15 @@ router.post('/text-to-speech', optionalAuth, async (req, res) => {
         console.log('🎙️  Generating speech with Microsoft Edge TTS (FREE)...');
         console.log('📝 Text length:', text.length, 'characters');
 
+        const ttsReady = await ensureEdgeTtsAvailable();
+        if (!ttsReady) {
+            return res.status(503).json({
+                error: 'TTS service unavailable',
+                message: 'edge_tts is not installed and automatic installation failed on this server.',
+                tip: 'Set startup command to install dependency: python3 -m pip install --user edge-tts && npm start'
+            });
+        }
+
         // Create uploads directory for audio files
         const audioDir = path.join(__dirname, '..', 'uploads', 'podcasts');
         if (!fs.existsSync(audioDir)) {
@@ -697,6 +768,8 @@ router.post('/text-to-speech', optionalAuth, async (req, res) => {
             { cmd: process.env.EDGE_TTS_COMMAND || 'edge-tts', baseArgs: [] }
         ];
 
+        const ttsExecEnv = getTtsExecEnv();
+
         const ratePercent = Number.isFinite(Number(speed))
             ? Math.round((Number(speed) - 1) * 100)
             : 0;
@@ -721,7 +794,8 @@ router.post('/text-to-speech', optionalAuth, async (req, res) => {
             try {
                 const { stdout, stderr } = await execFilePromise(candidate.cmd, ttsArgs, {
                     timeout: 120000,
-                    maxBuffer: 20 * 1024 * 1024
+                    maxBuffer: 20 * 1024 * 1024,
+                    env: ttsExecEnv
                 });
 
                 if (stdout) {
