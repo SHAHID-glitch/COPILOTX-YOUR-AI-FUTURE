@@ -707,6 +707,28 @@ router.delete('/images/:filename', auth, (req, res) => {
 });
 
 // POST /api/ai/text-to-speech - Convert text to speech using Microsoft Edge TTS (FREE, No API Key!)
+router.get('/text-to-speech-status', optionalAuth, async (req, res) => {
+    try {
+        const available = await ensureEdgeTtsAvailable();
+        return res.json({
+            success: true,
+            available,
+            provider: available ? 'edge_tts' : 'browser_fallback',
+            message: available
+                ? 'Server-side TTS is available.'
+                : 'Server-side TTS is unavailable on this instance. Use browser fallback.'
+        });
+    } catch (error) {
+        console.error('❌ Error checking TTS status:', error.message);
+        return res.json({
+            success: true,
+            available: false,
+            provider: 'browser_fallback',
+            message: 'Unable to verify server-side TTS. Use browser fallback.'
+        });
+    }
+});
+
 router.post('/text-to-speech', optionalAuth, async (req, res) => {
     try {
         const { text, voice = 'default', speed = 1.0 } = req.body;

@@ -6581,7 +6581,7 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
                     },
                     body: JSON.stringify({
                         prompt: `Create an engaging podcast script about: ${topic}\n\nRequirements:\n- Create a natural, conversational podcast script\n- Include an engaging introduction\n- Cover key points with interesting details\n- Add natural transitions between topics\n- Include a memorable conclusion\n- Write in a friendly, engaging tone\n- Script should be 2-3 minutes when spoken\n- Use natural speech patterns and pauses\n\nWrite ONLY the script content, no extra formatting or labels.`,
@@ -6606,6 +6606,21 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
                 // Get selected voice (use default if no voice selected)
                 const voiceSelect = document.getElementById('podcastVoice');
                 const voice = voiceSelect ? voiceSelect.value : 'default';
+
+                const serverTtsAvailable = await checkServerTtsAvailability();
+                if (!serverTtsAvailable) {
+                    window.lastGeneratedPodcast = {
+                        script,
+                        topic,
+                        serverAudioAvailable: false
+                    };
+
+                    speak(script);
+                    loadingMsg.innerHTML = formatTextToHtml(
+                        `✅ Podcast script created!\n\n📝 **Script Preview:**\n${script.substring(0, 300)}${script.length > 300 ? '...' : ''}\n\n🔊 Server audio is unavailable, so browser voice playback is being used.`
+                    );
+                    return;
+                }
 
                 // Generate audio using TTS
                 const ttsResponse = await fetch(`${API_BASE_URL}/api/ai/text-to-speech`, {
@@ -6676,8 +6691,13 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
 
         // Play podcast audio
         function playPodcast() {
-            if (!window.lastGeneratedPodcast || !window.lastGeneratedPodcast.url) {
+            if (!window.lastGeneratedPodcast) {
                 alert('No podcast available to play');
+                return;
+            }
+
+            if (!window.lastGeneratedPodcast.url && window.lastGeneratedPodcast.script) {
+                speak(window.lastGeneratedPodcast.script);
                 return;
             }
 
@@ -6778,6 +6798,34 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
         // ============================================================
 
         let currentPodcastData = null;
+        let serverTtsAvailability = null;
+
+        async function checkServerTtsAvailability() {
+            if (serverTtsAvailability !== null) {
+                return serverTtsAvailability;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/ai/text-to-speech-status`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                    }
+                });
+
+                if (!response.ok) {
+                    serverTtsAvailability = false;
+                    return false;
+                }
+
+                const data = await response.json();
+                serverTtsAvailability = !!data.available;
+                return serverTtsAvailability;
+            } catch (error) {
+                console.warn('TTS status check failed, using browser fallback:', error.message);
+                serverTtsAvailability = false;
+                return false;
+            }
+        }
 
         // Open Podcast Modal
         async function openPodcastModal() {
@@ -6913,6 +6961,23 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
 
                 // Step 2: Convert script to speech
                 document.getElementById('podcastGeneratingText').textContent = 'Converting to speech...';
+
+                const serverTtsAvailable = await checkServerTtsAvailability();
+                if (!serverTtsAvailable) {
+                    currentPodcastData = {
+                        title,
+                        script,
+                        voice,
+                        serverAudioAvailable: false,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    generatingDiv.style.display = 'none';
+                    previewDiv.style.display = 'block';
+                    speak(script);
+                    addMessage('assistant', `✅ Podcast script generated.\n\n🔊 Server audio is currently unavailable on this instance, so browser voice playback is being used.`);
+                    return;
+                }
                 
                 const ttsResponse = await fetch(`${API_BASE_URL}/api/ai/text-to-speech`, {
                     method: 'POST',
