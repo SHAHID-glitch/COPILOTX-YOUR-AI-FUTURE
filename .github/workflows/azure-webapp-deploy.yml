@@ -30,7 +30,12 @@ jobs:
           fi
 
       - name: Build CSS
-        run: npm run build:css
+        run: |
+          if [ -f style-tailwind.css ]; then
+            npm run build:css
+          else
+            echo "style-tailwind.css not found, skipping CSS build"
+          fi
 
       - name: Create deployment package
         run: |
