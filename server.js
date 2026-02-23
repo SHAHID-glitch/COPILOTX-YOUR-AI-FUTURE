@@ -46,6 +46,12 @@ app.use(express.static('.', {
         }
     }
 }));
+
+// Default homepage route
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'copilot-standalone.html'));
+});
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Session middleware (required for passport)
