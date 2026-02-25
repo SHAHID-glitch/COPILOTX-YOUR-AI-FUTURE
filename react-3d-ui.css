@@ -1,0 +1,145 @@
+:root {
+    --rx3d-tilt-x: 0deg;
+    --rx3d-tilt-y: 0deg;
+}
+
+.main-container {
+    perspective: 1200px;
+    transform-style: preserve-3d;
+}
+
+.layout-wrapper.rx3d-active .main-container,
+.layout-wrapper.rx3d-active .sidebar {
+    transform: rotateX(var(--rx3d-tilt-x)) rotateY(var(--rx3d-tilt-y));
+    transition: transform 240ms ease-out;
+    will-change: transform;
+}
+
+#react3d-ui-root {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.rx3d-overlay {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 22px;
+}
+
+.rx3d-grid {
+    position: absolute;
+    inset: -30% -20%;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 44px 44px;
+    transform: rotateX(65deg) translateZ(-60px);
+    transform-origin: center bottom;
+    opacity: 0.25;
+    animation: rx3dGridDrift 16s linear infinite;
+}
+
+.rx3d-orb {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(8px);
+    opacity: 0.55;
+    transform: translateZ(42px);
+    animation: rx3dFloat 10s ease-in-out infinite;
+}
+
+.rx3d-orb.one {
+    width: 260px;
+    height: 260px;
+    top: 8%;
+    right: 12%;
+    background: radial-gradient(circle at 30% 30%, rgba(75, 180, 255, 0.9), rgba(75, 180, 255, 0.1));
+}
+
+.rx3d-orb.two {
+    width: 210px;
+    height: 210px;
+    left: 7%;
+    bottom: 12%;
+    background: radial-gradient(circle at 35% 35%, rgba(158, 109, 255, 0.88), rgba(158, 109, 255, 0.08));
+    animation-delay: 1.2s;
+}
+
+.rx3d-orb.three {
+    width: 150px;
+    height: 150px;
+    left: 44%;
+    top: 18%;
+    background: radial-gradient(circle at 30% 30%, rgba(55, 240, 186, 0.75), rgba(55, 240, 186, 0.06));
+    animation-delay: 2.1s;
+}
+
+.rx3d-chip {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: linear-gradient(135deg, rgba(20, 23, 35, 0.68), rgba(42, 48, 78, 0.42));
+    backdrop-filter: blur(8px);
+    color: #f8fbff;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    pointer-events: auto;
+    z-index: 2;
+}
+
+.rx3d-chip button {
+    border: 0;
+    border-radius: 999px;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.rx3d-chip button:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+
+@keyframes rx3dFloat {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 45px);
+    }
+    50% {
+        transform: translate3d(0, -12px, 55px);
+    }
+}
+
+@keyframes rx3dGridDrift {
+    0% {
+        transform: rotateX(65deg) translate3d(0, 0, -60px);
+    }
+    100% {
+        transform: rotateX(65deg) translate3d(30px, 24px, -60px);
+    }
+}
+
+@media (max-width: 900px) {
+    .rx3d-chip {
+        top: 10px;
+        right: 10px;
+        padding: 8px 12px;
+    }
+
+    .layout-wrapper.rx3d-active .main-container,
+    .layout-wrapper.rx3d-active .sidebar {
+        transform: none;
+    }
+}

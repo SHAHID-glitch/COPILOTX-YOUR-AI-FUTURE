@@ -60,6 +60,7 @@
     <link rel="stylesheet" href="style-mobile.css">
     <link rel="stylesheet" href="style-mobile-enhanced.css">
     <link rel="stylesheet" href="memory-management.css">
+    <link rel="stylesheet" href="react-3d-ui.css">
     <!-- Cache Buster - MUST load first -->
     <script src="cache-buster.js"></script>
     <!-- Scripts -->
@@ -1107,6 +1108,7 @@
 
         <!-- Main Container -->
         <div class="main-container">
+            <div id="react3d-ui-root" aria-hidden="true"></div>
             <div class="gradient-blob blob-1"></div>
             <div class="gradient-blob blob-2"></div>
             <div class="gradient-blob blob-3"></div>
@@ -1397,6 +1399,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" defer></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin defer></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
+    <script src="react-3d-ui.js" defer></script>
     
     <!-- Main Application Script -->
     <script src="first.js" defer></script>
