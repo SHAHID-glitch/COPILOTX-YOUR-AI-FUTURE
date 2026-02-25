@@ -29,11 +29,14 @@ function getPythonCandidates() {
     return [
         process.env.EDGE_TTS_PYTHON,
         process.env.PYTHON_BIN,
+        process.env.WEBSITE_PYTHON_PATH,
+        '/usr/bin/python3',
+        '/usr/local/bin/python3',
+        'python3',
+        'python',
         '/opt/venv/bin/python',
         path.join(projectRoot, '.venv', 'bin', 'python'),
         path.join(projectRoot, '.venv', 'Scripts', 'python.exe'),
-        'python3',
-        'python'
     ].filter(Boolean);
 }
 
@@ -42,6 +45,37 @@ async function checkEdgeTtsImport(pythonCmd, env) {
         timeout: 15000,
         env
     });
+}
+
+async function ensurePipAvailable(pythonCmd, env) {
+    try {
+        await execFilePromise(pythonCmd, ['-m', 'pip', '--version'], {
+            timeout: 10000,
+            env
+        });
+        return true;
+    } catch (pipCheckError) {
+        console.warn(`⚠️  pip is unavailable for ${pythonCmd}, attempting ensurepip...`);
+    }
+
+    try {
+        await execFilePromise(pythonCmd, ['-m', 'ensurepip', '--upgrade'], {
+            timeout: 60000,
+            maxBuffer: 10 * 1024 * 1024,
+            env
+        });
+
+        await execFilePromise(pythonCmd, ['-m', 'pip', '--version'], {
+            timeout: 10000,
+            env
+        });
+
+        console.log(`✅ pip bootstrapped successfully via ensurepip for: ${pythonCmd}`);
+        return true;
+    } catch (ensurePipError) {
+        console.warn(`⚠️  ensurepip failed for ${pythonCmd}:`, ensurePipError.message);
+        return false;
+    }
 }
 
 async function ensureEdgeTtsAvailable() {
@@ -78,6 +112,11 @@ async function ensureEdgeTtsAvailable() {
     ];
 
     for (const pythonCmd of pythonCandidates) {
+        const pipReady = await ensurePipAvailable(pythonCmd, env);
+        if (!pipReady) {
+            continue;
+        }
+
         for (const args of installAttempts) {
             try {
                 console.log('🔧 Installing edge-tts:', `${pythonCmd} ${args.join(' ')}`);
@@ -801,16 +840,7 @@ router.post('/text-to-speech', optionalAuth, async (req, res) => {
         };
         const selectedVoice = voiceMap[voice] || voiceMap['default'];
 
-        const projectRoot = path.join(__dirname, '..');
-        const pythonCandidates = [
-            process.env.EDGE_TTS_PYTHON,
-            process.env.PYTHON_BIN,
-            '/opt/venv/bin/python',
-            path.join(projectRoot, '.venv', 'bin', 'python'),
-            path.join(projectRoot, '.venv', 'Scripts', 'python.exe'),
-            'python3',
-            'python'
-        ].filter(Boolean);
+        const pythonCandidates = getPythonCandidates();
 
         const commandCandidates = [
             ...pythonCandidates.map(cmd => ({ cmd, baseArgs: ['-m', 'edge_tts'] })),
