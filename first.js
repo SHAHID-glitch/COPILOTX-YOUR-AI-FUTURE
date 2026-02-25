@@ -6653,10 +6653,39 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
 
                     if (!ttsResponse.ok) {
                         let errMsg = `Failed to generate audio`;
+                        let errData = null;
                         try {
-                            const errData = await ttsResponse.json();
+                            errData = await ttsResponse.json();
                             errMsg = errData.error || errData.message || errMsg;
                         } catch {}
+
+                        const errorText = `${errData?.error || ''} ${errData?.message || ''}`.toLowerCase();
+                        const isTtsUnavailable = ttsResponse.status === 503 ||
+                            errorText.includes('tts service unavailable') ||
+                            errorText.includes('edge_tts is not installed');
+
+                        if (isTtsUnavailable) {
+                            console.warn('⚠️ Server-side TTS unavailable, using browser speech fallback for chat podcast.');
+                            window.lastGeneratedPodcast = {
+                                script: script,
+                                topic: topic,
+                                isBrowserTts: true,
+                                timestamp: new Date().toISOString()
+                            };
+
+                            speak(script);
+
+                            const fallbackMessage = `⚠️ Server audio generation is temporarily unavailable.\n\n🔊 Playing with browser voice fallback now.\n\nNote: MP3 download/share is not available in fallback mode.`;
+                            const fallbackButton = `<div style="margin-top: 12px;">
+                                <button onclick="playPodcast()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                                    <i class="fas fa-play"></i> Play Again
+                                </button>
+                            </div>`;
+
+                            loadingMsg.innerHTML = formatTextToHtml(fallbackMessage) + fallbackButton;
+                            return;
+                        }
+
                         throw new Error(errMsg);
                     }
 
@@ -6702,6 +6731,12 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
 
         // Play podcast audio
         function playPodcast() {
+            const podcastData = currentPodcastData || window.lastGeneratedPodcast;
+            if (podcastData?.isBrowserTts && podcastData?.script) {
+                speak(podcastData.script);
+                return;
+            }
+
             if (!window.lastGeneratedPodcast || !window.lastGeneratedPodcast.url) {
                 alert('No podcast available to play');
                 return;
@@ -6993,8 +7028,9 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
                     if (!ttsResponse.ok) {
                         let errorMessage = 'Failed to generate podcast audio';
                         let fullErrorDetails = '';
+                        let errorData = null;
                         try {
-                            const errorData = await ttsResponse.json();
+                            errorData = await ttsResponse.json();
                             console.error('❌ TTS Error Response:', JSON.stringify(errorData, null, 2));
                             errorMessage = errorData.error || errorData.message || errorMessage;
                             fullErrorDetails = errorData.message || errorData.error || '';
@@ -7010,6 +7046,30 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
                             console.error('Could not parse error response:', e);
                             fullErrorDetails = `HTTP ${ttsResponse.status}: ${ttsResponse.statusText}`;
                         }
+
+                        const errorText = `${errorData?.error || ''} ${errorData?.message || ''}`.toLowerCase();
+                        const isTtsUnavailable = ttsResponse.status === 503 ||
+                            errorText.includes('tts service unavailable') ||
+                            errorText.includes('edge_tts is not installed');
+
+                        if (isTtsUnavailable) {
+                            console.warn('⚠️ Server-side TTS unavailable, using browser speech fallback for modal podcast.');
+                            currentPodcastData = {
+                                title: title,
+                                script: script,
+                                voice: voice,
+                                isBrowserTts: true,
+                                timestamp: new Date().toISOString()
+                            };
+
+                            speak(script);
+
+                            generatingDiv.style.display = 'none';
+                            previewDiv.style.display = 'none';
+                            addMessage('assistant', `⚠️ Server podcast audio is unavailable right now. I played "${title}" using browser voice fallback (MP3 download/share is disabled in fallback mode).`);
+                            return;
+                        }
+
                         throw new Error(fullErrorDetails || errorMessage);
                     }
 
@@ -7079,6 +7139,11 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
                 return;
             }
 
+            if (podcastData.isBrowserTts) {
+                alert('Download is not available while using browser voice fallback. Please try again when server TTS is available.');
+                return;
+            }
+
             const link = document.createElement('a');
             
             // Handle different data structures
@@ -7110,6 +7175,11 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
             
             if (!podcastData) {
                 alert('No podcast to share');
+                return;
+            }
+
+            if (podcastData.isBrowserTts) {
+                alert('Share is not available while using browser voice fallback. Please try again when server TTS is available.');
                 return;
             }
 
