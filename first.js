@@ -6630,6 +6630,28 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
                 const voiceSelect = document.getElementById('podcastVoice');
                 const voice = voiceSelect ? voiceSelect.value : 'default';
 
+                const ttsAvailable = await isServerTtsAvailable();
+                if (!ttsAvailable) {
+                    window.lastGeneratedPodcast = {
+                        script: script,
+                        topic: topic,
+                        isBrowserTts: true,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    speak(script);
+
+                    const fallbackMessage = `⚠️ Server audio generation is unavailable on this deployment.\n\n🔊 Playing with browser voice fallback now.\n\nNote: MP3 download/share is not available in fallback mode.`;
+                    const fallbackButton = `<div style="margin-top: 12px;">
+                        <button onclick="playPodcast()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            <i class="fas fa-play"></i> Play Again
+                        </button>
+                    </div>`;
+
+                    loadingMsg.innerHTML = formatTextToHtml(fallbackMessage) + fallbackButton;
+                    return;
+                }
+
                 // Handle long scripts by chunking at sentence boundaries
                 const chunks = script.length > 1000 ? splitTextIntoChunks(script, 900) : [script];
                 const audioBlobs = [];
@@ -6928,6 +6950,41 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
             return chunks.length > 0 ? chunks : [text];
         }
 
+        let serverTtsStatusCache = {
+            available: null,
+            checkedAt: 0
+        };
+
+        async function isServerTtsAvailable(forceRefresh = false) {
+            const cacheAgeMs = Date.now() - serverTtsStatusCache.checkedAt;
+            if (!forceRefresh && serverTtsStatusCache.available !== null && cacheAgeMs < 60000) {
+                return serverTtsStatusCache.available;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/ai/text-to-speech-status`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('token') || ''}`
+                    }
+                });
+
+                if (!response.ok) {
+                    serverTtsStatusCache = { available: false, checkedAt: Date.now() };
+                    return false;
+                }
+
+                const data = await response.json();
+                const available = !!data?.available;
+                serverTtsStatusCache = { available, checkedAt: Date.now() };
+                return available;
+            } catch (error) {
+                console.warn('⚠️ Unable to check server TTS status, using browser fallback.', error);
+                serverTtsStatusCache = { available: false, checkedAt: Date.now() };
+                return false;
+            }
+        }
+
         // Generate Podcast
         async function generatePodcast() {
             // Check if user is authenticated (safety check)
@@ -7000,6 +7057,24 @@ ${ocr.extractedText.substring(0, 500)}${ocr.extractedText.length > 500 ? '\n...[
 
                 // Step 2: Convert script to speech (with chunking for long texts)
                 document.getElementById('podcastGeneratingText').textContent = 'Converting to speech...';
+
+                const ttsAvailable = await isServerTtsAvailable();
+                if (!ttsAvailable) {
+                    currentPodcastData = {
+                        title: title,
+                        script: script,
+                        voice: voice,
+                        isBrowserTts: true,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    speak(script);
+
+                    generatingDiv.style.display = 'none';
+                    previewDiv.style.display = 'none';
+                    addMessage('assistant', `⚠️ Server podcast audio is unavailable on this deployment. I played "${title}" using browser voice fallback (MP3 download/share is disabled in fallback mode).`);
+                    return;
+                }
                 
                 // Split text into chunks if it exceeds 1000 characters
                 const textChunks = script.length > 1000 ? splitTextIntoChunks(script, 900) : [script];
