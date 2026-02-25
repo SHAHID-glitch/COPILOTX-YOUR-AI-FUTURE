@@ -13,6 +13,8 @@ const { auth, optionalAuth } = require('../middleware/auth');
 
 let edgeTtsChecked = false;
 let edgeTtsAvailable = false;
+let edgeTtsLastCheckedAt = 0;
+const EDGE_TTS_RETRY_MS = 60 * 1000;
 
 function getTtsExecEnv() {
     const env = { ...process.env };
@@ -22,50 +24,77 @@ function getTtsExecEnv() {
     return env;
 }
 
+function getPythonCandidates() {
+    const projectRoot = path.join(__dirname, '..');
+    return [
+        process.env.EDGE_TTS_PYTHON,
+        process.env.PYTHON_BIN,
+        '/opt/venv/bin/python',
+        path.join(projectRoot, '.venv', 'bin', 'python'),
+        path.join(projectRoot, '.venv', 'Scripts', 'python.exe'),
+        'python3',
+        'python'
+    ].filter(Boolean);
+}
+
+async function checkEdgeTtsImport(pythonCmd, env) {
+    await execFilePromise(pythonCmd, ['-c', 'import edge_tts'], {
+        timeout: 15000,
+        env
+    });
+}
+
 async function ensureEdgeTtsAvailable() {
-    if (edgeTtsChecked) {
+    if (edgeTtsAvailable) {
         return edgeTtsAvailable;
     }
 
-    edgeTtsChecked = true;
-    const env = getTtsExecEnv();
-
-    try {
-        await execFilePromise('python3', ['-c', 'import edge_tts'], {
-            timeout: 15000,
-            env
-        });
-        edgeTtsAvailable = true;
-        console.log('✅ edge_tts module is available');
-        return true;
-    } catch (checkError) {
-        console.warn('⚠️  edge_tts module missing, attempting automatic install...');
+    if (edgeTtsChecked && (Date.now() - edgeTtsLastCheckedAt) < EDGE_TTS_RETRY_MS) {
+        return false;
     }
+
+    edgeTtsChecked = true;
+    edgeTtsLastCheckedAt = Date.now();
+    const env = getTtsExecEnv();
+    const pythonCandidates = getPythonCandidates();
+
+    for (const pythonCmd of pythonCandidates) {
+        try {
+            await checkEdgeTtsImport(pythonCmd, env);
+            edgeTtsAvailable = true;
+            console.log(`✅ edge_tts module is available via: ${pythonCmd}`);
+            return true;
+        } catch (checkError) {
+            console.warn(`⚠️  edge_tts import check failed for ${pythonCmd}:`, checkError.message);
+        }
+    }
+
+    console.warn('⚠️  edge_tts module missing, attempting automatic install...');
 
     const installAttempts = [
         ['-m', 'pip', 'install', '--user', 'edge-tts'],
-        ['-m', 'pip', 'install', '--user', '--break-system-packages', 'edge-tts']
+        ['-m', 'pip', 'install', '--user', '--break-system-packages', 'edge-tts'],
+        ['-m', 'pip', 'install', '--break-system-packages', 'edge-tts']
     ];
 
-    for (const args of installAttempts) {
-        try {
-            console.log('🔧 Installing edge-tts:', `python3 ${args.join(' ')}`);
-            await execFilePromise('python3', args, {
-                timeout: 240000,
-                maxBuffer: 20 * 1024 * 1024,
-                env
-            });
+    for (const pythonCmd of pythonCandidates) {
+        for (const args of installAttempts) {
+            try {
+                console.log('🔧 Installing edge-tts:', `${pythonCmd} ${args.join(' ')}`);
+                await execFilePromise(pythonCmd, args, {
+                    timeout: 240000,
+                    maxBuffer: 20 * 1024 * 1024,
+                    env
+                });
 
-            await execFilePromise('python3', ['-c', 'import edge_tts'], {
-                timeout: 15000,
-                env
-            });
+                await checkEdgeTtsImport(pythonCmd, env);
 
-            edgeTtsAvailable = true;
-            console.log('✅ edge_tts installed successfully');
-            return true;
-        } catch (installError) {
-            console.warn('⚠️  edge_tts install attempt failed:', installError.message);
+                edgeTtsAvailable = true;
+                console.log(`✅ edge_tts installed successfully via: ${pythonCmd}`);
+                return true;
+            } catch (installError) {
+                console.warn(`⚠️  edge_tts install attempt failed for ${pythonCmd}:`, installError.message);
+            }
         }
     }
 
@@ -746,11 +775,7 @@ router.post('/text-to-speech', optionalAuth, async (req, res) => {
 
         const ttsReady = await ensureEdgeTtsAvailable();
         if (!ttsReady) {
-            return res.status(503).json({
-                error: 'TTS service unavailable',
-                message: 'edge_tts is not installed and automatic installation failed on this server.',
-                tip: 'Set startup command to install dependency: python3 -m pip install --user edge-tts && npm start'
-            });
+            console.warn('⚠️  Precheck could not confirm edge_tts; continuing with direct command attempts...');
         }
 
         // Create uploads directory for audio files
@@ -779,8 +804,10 @@ router.post('/text-to-speech', optionalAuth, async (req, res) => {
         const projectRoot = path.join(__dirname, '..');
         const pythonCandidates = [
             process.env.EDGE_TTS_PYTHON,
-            path.join(projectRoot, '.venv', 'Scripts', 'python.exe'),
+            process.env.PYTHON_BIN,
+            '/opt/venv/bin/python',
             path.join(projectRoot, '.venv', 'bin', 'python'),
+            path.join(projectRoot, '.venv', 'Scripts', 'python.exe'),
             'python3',
             'python'
         ].filter(Boolean);
@@ -844,7 +871,7 @@ router.post('/text-to-speech', optionalAuth, async (req, res) => {
                 error: 'TTS service unavailable',
                 message: 'Edge TTS is not available on this server instance.',
                 details: ttsErrors.slice(0, 3),
-                tip: 'Install edge-tts and ensure python3 is available, or set EDGE_TTS_PYTHON/EDGE_TTS_COMMAND.'
+                tip: 'Install edge-tts (requirements.txt or pip install edge-tts), ensure python3 exists, or set EDGE_TTS_PYTHON/EDGE_TTS_COMMAND. Browser speech fallback remains available client-side.'
             });
         }
 
