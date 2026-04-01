@@ -14,15 +14,21 @@ async function searchDuckDuckGo(query, maxResults = 10) {
         
         const response = await axios.get(url, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Cache-Control': 'max-age=0'
             },
-            timeout: 10000 // 10 second timeout
+            timeout: 15000 // Increased timeout for better reliability
         });
 
         const $ = cheerio.load(response.data);
         const results = [];
 
-        // DuckDuckGo lite has links with class 'result-link' and snippets in nearby elements
+        // DuckDuckGo Lite uses a table structure with result-link class
         $('a.result-link').each((i, el) => {
             if (results.length >= maxResults) return false; // Stop when we have enough results
 
@@ -39,17 +45,14 @@ async function searchDuckDuckGo(query, maxResults = 10) {
                 }
             }
 
-            // Get the snippet from the parent's next sibling or nearby text
+            // Navigate to snippet: link is in TR, next TR has snippet
             let snippet = '';
-            const parent = $(el).parent();
-            const nextElements = parent.nextAll().slice(0, 2);
-            nextElements.each((j, nextEl) => {
-                const text = $(nextEl).text().trim();
-                if (text && !text.includes('http') && text.length > 20) {
-                    snippet = text;
-                    return false; // Break the loop
-                }
-            });
+            const parentTr = $(el).closest('tr');
+            const snippetTr = parentTr.next();
+            const snippetEl = snippetTr.find('td.result-snippet');
+            if (snippetEl.length) {
+                snippet = snippetEl.text().trim();
+            }
 
             if (title && link) {
                 results.push({
@@ -59,22 +62,6 @@ async function searchDuckDuckGo(query, maxResults = 10) {
                 });
             }
         });
-
-        // Fallback: If no results with result-link class, try parsing <a> tags directly
-        if (results.length === 0) {
-            $('a').each((i, el) => {
-                if (results.length >= maxResults) return false;
-
-                const title = $(el).text().trim();
-                const link = $(el).attr('href') || '';
-                
-                // Filter out navigation and internal DuckDuckGo links
-                if (title && link && link.startsWith('http') && title.length > 5) {
-                    const snippet = $(el).parent().text().trim() || 'No description available';
-                    results.push({ title, link, snippet });
-                }
-            });
-        }
 
         console.log(`✅ DuckDuckGo search completed: ${results.length} results for "${query}"`);
         return results.slice(0, maxResults);
@@ -92,61 +79,133 @@ async function searchDuckDuckGo(query, maxResults = 10) {
 }
 
 /**
- * Search for images using Unsplash API (free, no auth required for basic usage)
+ * Search for images using Wikimedia Commons (free, comprehensive image library)
+ * Falls back to direct image URLs from popular image services
  * @param {string} query - The search query
  * @param {number} maxResults - Maximum number of images to return (default: 6)
- * @returns {Promise<Array>} Array of image results with url, title, thumbnail, and source
+ * @returns {Promise<Array>} Array of image results with url, title, source
  */
 async function searchDuckDuckGoImages(query, maxResults = 6) {
     try {
-        // Use Unsplash's public API (no API key needed for basic usage with attribution)
-        const url = `https://unsplash.com/napi/search/photos?query=${encodeURIComponent(query)}&per_page=${maxResults}`;
-        
-        const response = await axios.get(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'application/json'
-            },
-            timeout: 10000
-        });
-
         const images = [];
-
-        if (response.data && response.data.results) {
-            response.data.results.forEach(img => {
-                images.push({
-                    url: img.urls?.regular || img.urls?.small || img.urls?.thumb,
-                    thumbnail: img.urls?.thumb || img.urls?.small,
-                    title: img.alt_description || img.description || query,
-                    source: 'Unsplash',
-                    photographer: img.user?.name || 'Unknown',
-                    width: img.width || 0,
-                    height: img.height || 0
-                });
+        
+        // Try Wikimedia Commons API (free, no auth required, CC licensed images)
+        try {
+            const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srnamespace=6&srlimit=${maxResults}&format=json`;
+            
+            const wikimediaResponse = await axios.get(wikiUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
+                },
+                timeout: 10000
             });
+
+            if (wikimediaResponse.data && wikimediaResponse.data.query && wikimediaResponse.data.query.search) {
+                const searchResults = wikimediaResponse.data.query.search;
+                
+                // Get image details for each result
+                for (const result of searchResults.slice(0, maxResults)) {
+                    try {
+                        // Get file info
+                        const fileUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(result.title)}&prop=imageinfo&iiprop=url|width|height|extmetadata&format=json`;
+                        const fileResponse = await axios.get(fileUrl, {
+                            headers: {
+                                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
+                            },
+                            timeout: 8000
+                        });
+
+                        const pages = fileResponse.data.query.pages;
+                        const page = Object.values(pages)[0];
+                        
+                        if (page.imageinfo && page.imageinfo[0]) {
+                            const imgInfo = page.imageinfo[0];
+                            const desc = page.imageinfo[0].extmetadata?.ImageDescription?.value || result.title;
+                            
+                            images.push({
+                                url: imgInfo.url,
+                                thumbnail: imgInfo.thumburl || imgInfo.url,
+                                title: result.title.replace(/_/g, ' ').replace(/File:/, '').replace(/\.(jpg|jpeg|png|gif|webp)$/i, ''),
+                                source: 'Wikimedia Commons',
+                                license: 'CC Licensed',
+                                width: imgInfo.width || 400,
+                                height: imgInfo.height || 300,
+                                description: desc.substring(0, 100)
+                            });
+                            
+                            if (images.length >= maxResults) break;
+                        }
+                    } catch (fileError) {
+                        console.warn(`⚠️ Could not fetch file info for ${result.title}:`, fileError.message);
+                    }
+
+                    if (images.length >= maxResults) break;
+                }
+
+                if (images.length > 0) {
+                    console.log(`✅ Image search completed: ${images.length} images from Wikimedia Commons for "${query}"`);
+                    return images;
+                }
+            }
+        } catch (wikimediaError) {
+            console.warn('⚠️ Wikimedia search failed:', wikimediaError.message);
         }
 
-        console.log(`✅ Image search completed: ${images.length} images for "${query}"`);
+        // Fallback: Generate image results from multiple free image sources
+        console.log('🔄 Using fallback - providing links to free image libraries');
+        
+        const imageServices = [
+            {
+                name: 'Unsplash',
+                url: `https://unsplash.com/s/photos/${encodeURIComponent(query)}`,
+                color: '2ea043'
+            },
+            {
+                name: 'Pexels',
+                url: `https://www.pexels.com/search/${encodeURIComponent(query)}/`,
+                color: '05a081'
+            },
+            {
+                name: 'Pixabay',
+                url: `https://pixabay.com/images/search/${encodeURIComponent(query)}/`,
+                color: '110066'
+            },
+            {
+                name: 'Wikimedia Commons',
+                url: `https://commons.wikimedia.org/w/index.php?search=${encodeURIComponent(query)}&title=Special:MediaSearch&type=image`,
+                color: '3366cc'
+            },
+            {
+                name: 'Flickr',
+                url: `https://www.flickr.com/search/?text=${encodeURIComponent(query)}&license=2%2C3%2C4%2C5%2C6%2C9`,
+                color: 'ff0084'
+            },
+            {
+                name: 'OpenStreetMap',
+                url: `https://www.openstreetmap.org/search?query=${encodeURIComponent(query)}`,
+                color: '2B5F7F'
+            }
+        ];
+
+        // Create result for each service (up to maxResults)
+        imageServices.slice(0, maxResults).forEach((service, idx) => {
+            images.push({
+                url: service.url,
+                thumbnail: `https://placehold.co/300x200/${service.color}/ffffff?text=${encodeURIComponent(service.name + ' Images')}`,
+                title: `${query} - View on ${service.name}`,
+                source: service.name,
+                searchUrl: service.url,
+                clickable: true,
+                width: 300,
+                height: 200
+            });
+        });
+        
         return images;
 
     } catch (error) {
         console.error('❌ Image search error:', error.message);
-        
-        // Fallback: Return placeholder image service URLs
-        console.log('🔄 Using fallback placeholder images');
-        const placeholders = [];
-        for (let i = 0; i < Math.min(maxResults, 4); i++) {
-            placeholders.push({
-                url: `https://placehold.co/400x300/2ea043/ffffff?text=${encodeURIComponent(query)}`,
-                thumbnail: `https://placehold.co/150x150/2ea043/ffffff?text=${encodeURIComponent(query)}`,
-                title: `${query} (Placeholder ${i + 1})`,
-                source: 'Placeholder',
-                photographer: 'System',
-                width: 400,
-                height: 300
-            });
-        }
-        return placeholders;
+        return [];
     }
 }
 
