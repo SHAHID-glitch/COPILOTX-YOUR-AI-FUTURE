@@ -59,7 +59,7 @@ console.log('📝 Copilot script starting...');
             // State getters with default values
             getUserId: () => window.currentUser?.id || window.currentUser?.userId || localStorage.getItem('userId'),
             getAuthToken: () => localStorage.getItem('authToken'),
-            isAuthenticated: () => !!AppState.getUserId(),
+            isAuthenticated: () => !!AppState.getAuthToken() && !!AppState.getUserId(),
             
             // State reset
             resetConversation: () => {
@@ -169,9 +169,10 @@ console.log('📝 Copilot script starting...');
         async function loadLibraryFromStorage() {
             try {
                 const userId = AppState.getUserId();
+                const authToken = AppState.getAuthToken();
                 
                 // If user is not authenticated, use localStorage fallback
-                if (!userId) {
+                if (!userId || !authToken) {
                     console.log('ℹ️  No authenticated user - using localStorage fallback');
                     const savedImages = safeJsonParse(localStorage.getItem('generatedImages'), []);
                     
@@ -185,7 +186,6 @@ console.log('📝 Copilot script starting...');
                 }
                 
                 // Load user's images from backend API with retry logic
-                const authToken = AppState.getAuthToken();
                 console.log('📸 Loading user images from backend for user:', userId);
                 console.log('🔑 Auth token present:', !!authToken);
                 
