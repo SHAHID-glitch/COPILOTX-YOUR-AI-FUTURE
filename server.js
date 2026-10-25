@@ -143,6 +143,11 @@ app.get('/api/health', (req, res) => {
 // Get all conversations
 app.get('/api/conversations', async (req, res) => {
     try {
+    if (process.env.NODE_ENV !== 'production' &&
+        req.headers['user-id'] === 'demo-user') {
+        return res.json({ success: true, conversations: [], count: 0 });
+    }
+
         const userId = req.headers['user-id'];
         
         if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
@@ -905,114 +910,19 @@ app.get('/api/analytics', (req, res) => {
 // Proxy endpoint for Hugging Face API (to avoid CORS)
 app.post('/api/generate-pdf-content', async (req, res) => {
     try {
-        const { prompt } = req.body;
-        const userPrompt = prompt || 'Write a comprehensive paragraph about the Internet of Things (IoT) and its impact on modern technology.';
-        
-        console.log('📄 Generating PDF content for prompt:', userPrompt);
-        
-        const API_KEY = process.env.GROQ_API_KEY;
-        
-        if (!API_KEY) {
-            return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
+        const { prompt } = req.body || {};
+        if (!prompt || typeof prompt !== 'string') {
+            return res.status(400).json({ success: false, error: 'Prompt is required' });
         }
-        
-        let retries = 3;
-        let lastError;
-        
-        // Retry logic for model loading
-        for (let i = 0; i < retries; i++) {
-            try {
-                console.log(`🔄 Attempt ${i + 1}/${retries} - Calling Groq API...`);
-                
-                const response = await axios.post(
-                    'https://api.groq.com/openai/v1/chat/completions',
-                    {
-                        model: 'llama-3.3-70b-versatile',
-                        messages: [
-                            {
-                                role: 'user',
-                                content: userPrompt
-                            }
-                        ],
-                        temperature: 0.7,
-                        max_tokens: 500
-                    },
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${API_KEY}`,
-                            'Content-Type': 'application/json'
-                        },
-                        timeout: 30000
-                    }
-                );
-                
-                console.log('✅ Response received from Groq API');
-                console.log('Response data:', JSON.stringify(response.data).substring(0, 200));
-                
-                const data = response.data;
-                
-                // Extract text from Groq response
-                let text = '';
-                if (data.choices && data.choices[0]?.message?.content) {
-                    text = data.choices[0].message.content;
-                } else if (data.generated_text) {
-                    text = data.generated_text;
-                } else if (typeof data === 'string') {
-                    text = data;
-                } else {
-                    console.warn('⚠️  Unexpected response format:', data);
-                    text = JSON.stringify(data);
-                }
-                
-                console.log('✅ AI content generated successfully, length:', text.length);
-                
-                return res.json({
-                    success: true,
-                    text: text,
-                    prompt: userPrompt
-                });
-                
-            } catch (error) {
-                lastError = error;
-                console.error(`❌ Attempt ${i + 1} failed:`, error.response?.status, error.response?.data || error.message);
-                
-                // If rate limited (429) or temporary error (503), wait and retry
-                if ((error.response?.status === 429 || error.response?.status === 503) && i < retries - 1) {
-                    const waitTime = 5000;
-                    console.log(`⏳ Rate limited or temporary error, waiting ${waitTime/1000} seconds... (attempt ${i + 1}/${retries})`);
-                    await new Promise(resolve => setTimeout(resolve, waitTime));
-                    continue;
-                }
-                
-                // Other errors, rethrow
-                if (i === retries - 1) {
-                    throw error;
-                }
-            }
-        }
-        
-        throw lastError;
-        
+        const response = await aiService.generateResponse(prompt, [], 'detailed');
+        const text = typeof response === 'string' ? response : response?.content;
+        if (!text) throw new Error('AI service returned no content');
+        return res.json({ success: true, text, metadata: response?.metadata });
     } catch (error) {
-        console.error('❌ Error generating PDF content:', error.message);
-        console.error('Error details:', error.response?.data || error.stack);
-        
-        let errorMessage = error.message || 'Failed to generate content';
-        
-        if (error.response?.status === 410) {
-            errorMessage = 'Model is loading. Please try again in 20 seconds.';
-        } else if (error.response?.status === 503) {
-            errorMessage = 'Model is currently unavailable. Please try again later.';
-        } else if (error.response?.status === 401) {
-            errorMessage = 'Invalid API key. Please check your Hugging Face API key.';
-        } else if (error.code === 'ECONNABORTED') {
-            errorMessage = 'Request timeout. The model took too long to respond.';
-        }
-        
-        res.status(500).json({
+        console.error('PDF content generation failed:', error.message);
+        return res.status(500).json({
             success: false,
-            error: errorMessage,
-            details: error.response?.data || error.message
+            error: 'Failed to generate PDF content. Check the server logs and AI provider configuration.'
         });
     }
 });
@@ -1039,37 +949,19 @@ app.use((err, req, res, next) => {
 // Generate content for PDF/DOCX using AI
 app.post('/api/generate-pdf-content', async (req, res) => {
     try {
-        const { prompt } = req.body;
-        
-        if (!prompt) {
-            return res.status(400).json({
-                success: false,
-                error: 'Prompt is required'
-            });
+        const { prompt } = req.body || {};
+        if (!prompt || typeof prompt !== 'string') {
+            return res.status(400).json({ success: false, error: 'Prompt is required' });
         }
-
-        console.log('📄 Generating content for PDF/DOCX with prompt:', prompt.substring(0, 100) + '...');
-
-        // Generate content using AI service
         const response = await aiService.generateResponse(prompt, [], 'detailed');
-        
-        if (!response || !response.content) {
-            throw new Error('AI service returned no content');
-        }
-
-        console.log('✅ Content generated successfully');
-        
-        res.json({
-            success: true,
-            text: response.content,
-            metadata: response.metadata
-        });
-
+        const text = typeof response === 'string' ? response : response?.content;
+        if (!text) throw new Error('AI service returned no content');
+        return res.json({ success: true, text, metadata: response?.metadata });
     } catch (error) {
-        console.error('❌ Error generating PDF/DOCX content:', error);
-        res.status(500).json({
+        console.error('PDF content generation failed:', error.message);
+        return res.status(500).json({
             success: false,
-            error: error.message || 'Failed to generate content'
+            error: 'Failed to generate PDF content. Check the server logs and AI provider configuration.'
         });
     }
 });

@@ -91,6 +91,34 @@ router.post('/login', async (req, res) => {
         // Debug logging - remove or lower when resolved
         console.log('[LOGIN] Attempting login for email:', email);
 
+        // TEMPORARY DEMO LOGIN — development only, no MongoDB required
+        if (
+            process.env.NODE_ENV !== 'production' &&
+            email === 'demo@copilotx.app' &&
+            password === 'DemoCopilotX2026!'
+        ) {
+            const demoUser = {
+                _id: 'demo-user',
+                id: 'demo-user',
+                username: 'CopilotX Demo',
+                email: 'demo@copilotx.app',
+                provider: 'local',
+                isActive: true
+            };
+
+            return res.json({
+                success: true,
+                token: generateToken(demoUser),
+                user: {
+                    id: 'demo-user',
+                    username: 'CopilotX Demo',
+                    email: 'demo@copilotx.app',
+                    provider: 'local',
+                    isActive: true
+                }
+            });
+        }
+
         // Find user by email
         const user = await User.findOne({ email }).catch(err => {
             console.error('Database query error:', err);
@@ -165,6 +193,28 @@ router.post('/verify', async (req, res) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        
+// Shahid Code Insert
+
+        // TEMPORARY DEMO TOKEN — development only
+        if (
+            process.env.NODE_ENV !== 'production' &&
+            decoded.userId === 'demo-user'
+        ) {
+            return res.json({
+                success: true,
+                valid: true,
+                user: {
+                    id: 'demo-user',
+                    username: 'CopilotX Demo',
+                    email: 'demo@copilotx.app',
+                    provider: 'local',
+                    isActive: true
+                }
+            });
+        }
+
+
         
         // Get user details
         const user = await User.findById(decoded.userId);
