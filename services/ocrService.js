@@ -57,9 +57,13 @@ const storage = multer.diskStorage({
 });
 
 // Configure multer for PDF uploads
+const pdfUploadDir = path.resolve(__dirname, '..', 'uploads', 'pdfs');
+
+fs.mkdirSync(pdfUploadDir, { recursive: true });
+
 const pdfStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/pdfs/');
+        cb(null, pdfUploadDir);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);

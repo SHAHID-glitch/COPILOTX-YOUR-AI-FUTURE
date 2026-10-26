@@ -6,6 +6,11 @@ require('dotenv').config();
 
 class ImageService {
     constructor() {
+        // Cloudflare Workers AI (primary image provider)
+        this.cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+        this.cloudflareApiToken = process.env.CLOUDFLARE_API_TOKEN;
+        this.cloudflareModel = '@cf/black-forest-labs/flux-1-schnell';
+
         // Initialize Hugging Face client
         this.hfClient = null;
         if (process.env.HUGGINGFACE_API_KEY) {
@@ -37,60 +42,103 @@ class ImageService {
         const startTime = Date.now();
         let lastError = null;
 
-        // Try Hugging Face first
+        // Try Cloudflare first because it was verified in this environment.
+        if (this.cloudflareAccountId && this.cloudflareApiToken) {
+            try {
+                console.log('🎨 Attempting image generation with Cloudflare Workers AI...');
+                const result = await this.generateWithCloudflare(prompt, options);
+                return {
+                    ...result,
+                    provider: 'cloudflare',
+                    model: this.cloudflareModel,
+                    processingTime: Date.now() - startTime
+                };
+            } catch (error) {
+                console.error('❌ Cloudflare image generation failed:', error.message);
+                lastError = error;
+            }
+        } else {
+            console.log('⚠️ Cloudflare credentials are not configured');
+        }
+
+        // Keep existing providers as fallbacks.
         if (this.hfClient) {
             try {
-                console.log('🎨 Attempting image generation with Hugging Face...');
+                console.log('Trying Hugging Face fallback...');
                 const result = await this.generateWithHuggingFace(prompt, options);
-                const processingTime = Date.now() - startTime;
-                
-                console.log(`✅ Hugging Face image generated successfully in ${processingTime}ms`);
-                
                 return {
                     ...result,
                     provider: 'huggingface',
                     model: this.hfModel,
-                    processingTime
+                    processingTime: Date.now() - startTime
                 };
             } catch (error) {
-                console.error('❌ Hugging Face image generation failed:', error.message);
+                console.error('❌ Hugging Face fallback failed:', error.message);
                 lastError = error;
             }
-        } else {
-            console.log('⚠️  Hugging Face client not available');
         }
 
-        // Fallback to Stable Diffusion
         if (this.sdEnabled) {
             try {
-                console.log('🔄 Falling back to Stable Diffusion local API...');
+                console.log('Trying Stable Diffusion fallback...');
                 const result = await this.generateWithStableDiffusion(prompt, options);
-                const processingTime = Date.now() - startTime;
-                
-                console.log(`✅ Stable Diffusion image generated successfully in ${processingTime}ms`);
-                
                 return {
                     ...result,
                     provider: 'stable-diffusion',
                     model: 'stable-diffusion-local',
-                    processingTime
+                    processingTime: Date.now() - startTime
                 };
             } catch (error) {
-                console.error('❌ Stable Diffusion image generation failed:', error.message);
+                console.error('❌ Stable Diffusion fallback failed:', error.message);
                 lastError = error;
             }
-        } else {
-            console.log('⚠️  Stable Diffusion fallback is disabled');
         }
 
-        // Both failed
         throw new Error(
-            `Image generation failed with all providers. ` +
-            `Last error: ${lastError?.message || 'Unknown error'}. ` +
-            `Troubleshooting: ` +
-            (this.hfClient ? '' : '✗ HUGGINGFACE_API_KEY not set. ') +
-            (this.sdEnabled ? `✗ Check if Stable Diffusion is running at ${this.sdApiUrl}. ` : '✗ SD_ENABLED is false. ')
+            `Image generation failed with all providers. Last error: ${lastError?.message || 'No provider configured'}.`
         );
+    }
+
+    /**
+     * Generate an image with Cloudflare Workers AI.
+     */
+    async generateWithCloudflare(prompt, options = {}) {
+        const url =
+            `https://api.cloudflare.com/client/v4/accounts/` +
+            `${this.cloudflareAccountId}/ai/run/${this.cloudflareModel}`;
+
+        const response = await axios.post(
+            url,
+            {
+                prompt,
+                steps: options.steps || 4
+            },
+            {
+                timeout: 120000,
+                headers: {
+                    Authorization: `Bearer ${this.cloudflareApiToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        const image = response.data?.result?.image;
+        if (!image || typeof image !== 'string') {
+            throw new Error('Cloudflare returned no image data');
+        }
+
+        const base64 = image.replace(/^data:image\/[^;]+;base64,/, '');
+        const buffer = Buffer.from(base64, 'base64');
+
+        if (!buffer.length) {
+            throw new Error('Cloudflare returned an empty image');
+        }
+
+        return {
+            buffer,
+            format: 'png',
+            metadata: { prompt, model: this.cloudflareModel }
+        };
     }
 
     /**
@@ -209,6 +257,10 @@ class ImageService {
      */
     getStatus() {
         return {
+            cloudflare: {
+                available: !!(this.cloudflareAccountId && this.cloudflareApiToken),
+                model: this.cloudflareModel
+            },
             huggingface: {
                 available: !!this.hfClient,
                 model: this.hfModel

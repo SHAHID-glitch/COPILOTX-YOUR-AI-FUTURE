@@ -16,7 +16,14 @@ const auth = async (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
         
-        // Find user
+        // Development-only demo account bypass when MongoDB is unavailable.
+        if (process.env.NODE_ENV !== "production" && decoded.userId === "demo-user" && decoded.email === "demo@copilotx.app") {
+            req.user = { _id: "demo-user", id: "demo-user", username: "CopilotX Demo", email: "demo@copilotx.app", isActive: true };
+            req.userId = "demo-user";
+            return next();
+        }
+
+        // Find regular user in MongoDB
         const user = await User.findById(decoded.userId);
         
         if (!user || !user.isActive) {
